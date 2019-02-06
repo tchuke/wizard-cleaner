@@ -1,0 +1,13 @@
+{
+  "name": "wizard-cleaner",
+  "version": "1.0.0",
+  "description": "Cleaning up the Wizard",
+  "main": "wizard-cleanup.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Antonio Hidalgo",
+  "license": "ISC"
+}
