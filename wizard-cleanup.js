@@ -20,7 +20,7 @@
     let DURATION_GUARD_DISABLED = true;
 
     /*eslint-disable */
-    function log(msg) { console.log(msg); }
+    function log(msg) { /* console.log(msg); */ }
     /*eslint-enable */
 
     (function clearClockOutValuesEachMorning() {
@@ -139,9 +139,10 @@
         var CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
         var target = getLoginForm(); //jQuery("div#jOverlay");
         log("Found target? " + target.length);
-        popup.hide().insertAfter(target).fadeIn();
+        if(target.length) {
+            popup.hide().insertAfter(target).fadeIn();
+        }
         popup.find(CLOSE_WINDOW_SELECTOR).click((event) => {
-            log("trying to remove popup on a click.");
             let the_popup = jQuery(event.delegateTarget).parent();
             the_popup.fadeOut();
         } );
@@ -154,12 +155,10 @@
         // Set Location to sole value
         (function setLocationToSoleValue() {
             let clock_in_select = jQuery("select#ddlLocation");
-            log("found clock in select? " + clock_in_select.length);
             if(clock_in_select.length) {
                 let options_with_value = clock_in_select.find("option[value]");
                 if(options_with_value.length) {
                     let last_option_value = options_with_value.last().attr("value");
-                    log("Found value of " + last_option_value);
                     clock_in_select.val(last_option_value);
                 }
             }
