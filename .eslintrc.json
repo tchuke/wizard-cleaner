@@ -55,10 +55,10 @@
         "default-case": "error",
         "dot-location": "error",
         "dot-notation": "error",
-        "eol-last": [
-            "error",
-            "never"
-        ],
+        "eol-last": "off",//[
+            //"error",
+            //"never"
+        //],
         "eqeqeq": "off",
         "func-call-spacing": "off",
         "func-name-matching": "error",
