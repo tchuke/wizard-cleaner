@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.13
+// @version      0.131
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -17,10 +17,11 @@
 
 (function() {
 
-    let DURATION_GUARD_DISABLED = false;
-/*eslint-disable */
+    let DURATION_GUARD_DISABLED = true;
+
+    /*eslint-disable */
     function log(msg) { console.log(msg); }
-/*eslint-enable */
+    /*eslint-enable */
 
     (function clearClockOutValuesEachMorning() {
         let now = new Date();
@@ -51,7 +52,7 @@
 
     (function guardForLunchBreakDuration() {
 
-        jQuery("button[value=ClockOut]").click(function handleClockOutClick() {
+        jQuery("button[value=ClockOut]").click(function handleClockOutClick(event) {
             //event.preventDefault();
             var username = getUserNameInput().val();
             var now = new Date();
@@ -96,7 +97,7 @@
                         event.preventDefault();
                         log("We don't know where they clocked out.");
                         let verbiage = "To clock in, you must be at the same desktop and user where you clocked out.";
-                        let wrong_desktop_alert = make_error_popup(verbiage);
+                        let wrong_desktop_alert = makeErrorPopup(verbiage);
                         loadAndPlacePopup(wrong_desktop_alert, 5250);
                     }
                 } else {
@@ -113,7 +114,7 @@
                         event.preventDefault();
                         log("Too short");
                         let verbiage = "You are only " + minutes_away + " minutes into your lunch break. Please try again later. ";
-                        let too_early_popup_alert = make_error_popup(verbiage);
+                        let too_early_popup_alert = makeErrorPopup(verbiage);
                         loadAndPlacePopup(too_early_popup_alert, 5250);
                     } else {
                         // Good break.
@@ -124,7 +125,7 @@
         });
     }());
 
-    function make_error_popup(verbiage) {
+    function makeErrorPopup(verbiage) {
         var height = jQuery(window).height();
         var width = jQuery(window).width();
         var popup = jQuery('<div id="jError" style="opacity: 1; min-width: 200px; top: ' + (Math.floor(height/5)+0) + 'px; left: ' + (Math.floor(width/5)+0) + 'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
@@ -132,9 +133,9 @@
     }
 
     function loadAndPlacePopup(popup, fadeOutDelay) {
-    function clearPasswordField() {
-        jQuery("input#Password").val('');
-    }
+        function clearPasswordField() {
+            jQuery("input#Password").val('');
+        }
         var CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
         var target = getLoginForm(); //jQuery("div#jOverlay");
         log("Found target? " + target.length);
@@ -149,6 +150,22 @@
         setTimeout(() => popup.remove(), fadeOutDelay + 2750);
     }
 
+    (function cleanClockInScreen() {
+        // Set Location to sole value
+        (function setLocationToSoleValue() {
+            let clock_in_select = jQuery("select#ddlLocation");
+            log("found clock in select? " + clock_in_select.length);
+            if(clock_in_select.length) {
+                let options_with_value = clock_in_select.find("option[value]");
+                if(options_with_value.length) {
+                    let last_option_value = options_with_value.last().attr("value");
+                    log("Found value of " + last_option_value);
+                    clock_in_select.val(last_option_value);
+                }
+            }
+        }());
+    }());
+
     /*
     Camera-on in tab prevents Windows Hello from using camera.
     */
@@ -157,7 +174,7 @@
         if(isLoginPage()) {
             setTimeout(function() {
                 let verbiage = "Closing the inactive Wizard page soon.  Please save your work now.";
-                let page_refresh_warning = make_error_popup(verbiage);
+                let page_refresh_warning = makeErrorPopup(verbiage);
                 loadAndPlacePopup(page_refresh_warning, 10 * 1000);
             }, 60 * 1000);
 
