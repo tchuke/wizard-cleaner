@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.131
+// @version      0.132
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -11,6 +11,8 @@
 // @grant        GM_deleteValue
 // @grant        GM_listValues
 // @require      https://code.jquery.com/jquery-3.3.1.js
+// @updateURL    https://www.hidalgocare.com/uploads/7/9/7/8/79788936/wizard-cleanup.js
+// @downloadURL  https://www.hidalgocare.com/uploads/7/9/7/8/79788936/wizard-cleanup.js
 // ==/UserScript==
 
 /* globals jQuery GM_setValue GM_getValue GM_deleteValue GM_listValues */
@@ -152,7 +154,6 @@
     }
 
     (function cleanClockInScreen() {
-        // Set Location to sole value
         (function setLocationToSoleValue() {
             let clock_in_select = jQuery("select#ddlLocation");
             if(clock_in_select.length) {
