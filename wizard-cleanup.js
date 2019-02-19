@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.132
+// @version      0.133
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -19,11 +19,11 @@
 
 (function() {
 
-    let DURATION_GUARD_DISABLED = true;
+    let DURATION_GUARD_DISABLED = false;
 
-    /*eslint-disable */
-    function log(msg) { /* console.log(msg); */ }
-    /*eslint-enable */
+    /* eslint-disable */
+    function log(msg) {  console.log(msg);  }
+    /* eslint-enable */
 
     (function clearClockOutValuesEachMorning() {
         let now = new Date();
@@ -52,17 +52,16 @@
         return getLoginForm().length;
     }
 
+    function getPasswordField() { return jQuery("input#Password"); }
+
     (function guardForLunchBreakDuration() {
 
-        jQuery("button[value=ClockOut]").click(function handleClockOutClick(event) {
-            //event.preventDefault();
+        jQuery("button[value=ClockOut]").click(function handleClockOutClick() {
             var username = getUserNameInput().val();
             var now = new Date();
-            log("At clock out, time is " + now.getTime() + " or " + now.getHours() + ":" + now.getMinutes());
+            log("At clock out, time is " + now.getHours() + ":" + now.getMinutes());
             log("Setting value " + username + " to " + now.getTime());
             GM_setValue(username, now.getTime());
-            var stored_clockout = GM_getValue(username);
-            log("in clockout, re-Getting value " + username + ". Is " + stored_clockout);
         });
 
         function isLunchHour(now) {
@@ -70,19 +69,14 @@
             return (hours > 11 && hours < 16);
         }
 
-        function isPMShiftWorker(username, now) {
-            let is_pm_start_time = (now.getHours() == 13 && now.getMinutes() > 45) || (now.getHours() == 14 && now.getMinutes() < 10);
-            let is_pm_worker = username == "mmoreno";
-            let FRIDAY = 5;
-            let is_pm_day = now.getDay() == FRIDAY;
-            return is_pm_worker && is_pm_start_time && is_pm_day;
-        }
+        function passwordIsEmpty() { return getPasswordField().val().trim().length == 0; }
 
         jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
-            //event.preventDefault();
             let now = new Date();
             if(DURATION_GUARD_DISABLED) {
                 log("duration feature disabled");
+            } else if(passwordIsEmpty()) {
+                log("invalid password so defer to app.");
             } else if(!isLunchHour(now)) {
                 log("Not a lunch hour, so person gets a pass.");
             } else {
@@ -91,17 +85,7 @@
                 log("Getting value " + username + ". Is " + stored_clockout);
                 let no_clockout_stored_today_on_this_machine = !stored_clockout;
                 if(no_clockout_stored_today_on_this_machine) {
-                    if(isPMShiftWorker(username, now)) {
-                        // TODO Sketchy logic!!!!  Perhaps have these people ask for a manual check-in.
-                        // Could be a way to check the Wizard schedule.
-                        log("Not an all-day worker, so person gets a pass.");
-                    } else {
-                        event.preventDefault();
-                        log("We don't know where they clocked out.");
-                        let verbiage = "To clock in, you must be at the same desktop and user where you clocked out.";
-                        let wrong_desktop_alert = makeErrorPopup(verbiage);
-                        loadAndPlacePopup(wrong_desktop_alert, 5250);
-                    }
+                    log("We don't know where they clocked out. Forgiving.");
                 } else {
                     // Clock-Out time is here for analysis
                     var clock_out_millis = stored_clockout;
@@ -130,13 +114,13 @@
     function makeErrorPopup(verbiage) {
         var height = jQuery(window).height();
         var width = jQuery(window).width();
-        var popup = jQuery('<div id="jError" style="opacity: 1; min-width: 200px; top: ' + (Math.floor(height/5)+0) + 'px; left: ' + (Math.floor(width/5)+0) + 'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
+        var popup = jQuery('<div id="jError" style="opacity: 1; z-index: 10000; min-width: 200px; top: ' + (Math.floor(height/5)+0) + 'px; left: ' + (Math.floor(width/5)+0) + 'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
         return popup;
     }
 
     function loadAndPlacePopup(popup, fadeOutDelay) {
         function clearPasswordField() {
-            jQuery("input#Password").val('');
+            getPasswordField().val('');
         }
         var CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
         var target = getLoginForm(); //jQuery("div#jOverlay");
@@ -181,14 +165,15 @@
             // Close Timeclock tab after a while
             setTimeout(function() {
                 log ("TCW: Ready to Close.");
-                //location.reload();
                 window.close();
                 log ("TCW: Closed.");
             }, 75 * 1000);
+            setTimeout(function() {
+                location.reload();
+                log ("TCW: Reloaded as backup fix.");
+            }, 85 * 1000);
+
         }
     }());
-
-    // TODO: is camera in use?
-    // https://stackoverflow.com/questions/42212214/how-to-check-with-javascript-that-webcam-is-being-used-in-chrome
 
 })();
