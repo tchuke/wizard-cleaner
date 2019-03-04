@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.133
+// @version      0.134
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -45,7 +45,7 @@
         dash_clock_buttons.hide();
     }());
 
-    function getUserNameInput() { return jQuery("input#UserName:visible");}
+    function getUserNameInput() { return jQuery("input#UserName");}
     function getLoginForm() { return jQuery("form[action='/Login']");}
 
     function isLoginPage() {
@@ -55,9 +55,9 @@
     function getPasswordField() { return jQuery("input#Password"); }
 
     (function guardForLunchBreakDuration() {
-
-        jQuery("button[value=ClockOut]").click(function handleClockOutClick() {
-            var username = getUserNameInput().val();
+        var username = getUserNameInput().val();
+        jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) {
+            //event.preventDefault();
             var now = new Date();
             log("At clock out, time is " + now.getHours() + ":" + now.getMinutes());
             log("Setting value " + username + " to " + now.getTime());
@@ -72,6 +72,7 @@
         function passwordIsEmpty() { return getPasswordField().val().trim().length == 0; }
 
         jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
+            //event.preventDefault();
             let now = new Date();
             if(DURATION_GUARD_DISABLED) {
                 log("duration feature disabled");
@@ -80,9 +81,9 @@
             } else if(!isLunchHour(now)) {
                 log("Not a lunch hour, so person gets a pass.");
             } else {
-                var username = getUserNameInput().val();
-                var stored_clockout = GM_getValue(username);
-                log("Getting value " + username + ". Is " + stored_clockout);
+                var user = getUserNameInput().val();
+                var stored_clockout = GM_getValue(user);
+                log("Getting value " + user + ". Is " + stored_clockout);
                 let no_clockout_stored_today_on_this_machine = !stored_clockout;
                 if(no_clockout_stored_today_on_this_machine) {
                     log("We don't know where they clocked out. Forgiving.");
