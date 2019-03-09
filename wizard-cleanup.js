@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.134
+// @version      0.135
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -54,12 +54,16 @@
 
     function getPasswordField() { return jQuery("input#Password"); }
 
+    function getTimeStringFromDate(date) {
+        return date.getHours() + ":" + (date.getMinutes() < 10 ? "0" : "") + date.getMinutes(); // eslint-disable-line
+    }
+
     (function guardForLunchBreakDuration() {
         var username = getUserNameInput().val();
-        jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) {
+        jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) { // eslint-disable-line
             //event.preventDefault();
             var now = new Date();
-            log("At clock out, time is " + now.getHours() + ":" + now.getMinutes());
+            log("At clock out, time is " + getTimeStringFromDate(now));
             log("Setting value " + username + " to " + now.getTime());
             GM_setValue(username, now.getTime());
         });
@@ -90,7 +94,7 @@
                 } else {
                     // Clock-Out time is here for analysis
                     var clock_out_millis = stored_clockout;
-                    log("At clock in, time is " + now.getTime() + " or " + now.getHours() + ":" + now.getMinutes());
+                    log("At clock in, time is " + now.getTime() + " or " + getTimeStringFromDate(now));
                     let millis_away = now.getTime() - clock_out_millis;
                     let _40_MINUTES_MILLIS = 40 * 60 * 1000;
                     let MIN_BREAK_TIME_MILLIS = _40_MINUTES_MILLIS;
