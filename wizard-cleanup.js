@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.138
+// @version      0.139
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -113,16 +113,34 @@
     (function guardForLunchBreakDuration() {
         var username = getUserNameInput().val();
 
+
         jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) { // eslint-disable-line
             //event.preventDefault();
+            function doOnClockoutCompletion(success_fun, fail_fun) {
+                setTimeout(() => {
+                    let jSuccess_count_after = jQuery("div#jSuccess:visible").length;
+                    log("success after: " + jSuccess_count_after);
+                    if(jSuccess_count_after) {
+                        success_fun();
+                    } else {
+                        fail_fun();
+                    }
+                }, 2500);
+            }
+
             var now = new Date();
+            let clockoutTime = now.getTime();
             log("At clock out, time is " + getTimeStringFromDate(now));
-            log("Setting value " + username + " to " + now.getTime());
-            GM_setValue(username, now.getTime());
 
             if (isUnexpectedTimeToClockOut()) {
                 playAlert();
             }
+
+            doOnClockoutCompletion(
+                () => { log("Setting value " + username + " to " + clockoutTime); GM_setValue(username, clockoutTime); },
+                () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
+            );
+
         });
 
         function isLunchHour(now) {
