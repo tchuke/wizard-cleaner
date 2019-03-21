@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.135
+// @version      0.136
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -53,19 +53,76 @@
     }
 
     function getPasswordField() { return jQuery("input#Password"); }
-
     function getTimeStringFromDate(date) {
-        return date.getHours() + ":" + (date.getMinutes() < 10 ? "0" : "") + date.getMinutes(); // eslint-disable-line
+        /* eslint-disable */
+        return date.getHours() + ":" + (date.getMinutes() < 10 ? "0": "") + date.getMinutes();
+        /* eslint-enable */
+    }
+    function isUnexpectedTimeToClockOut() {
+        let now = new Date();
+        return (now.getHours() == 14 && now.getMinutes() > 15) || (now.getHours == 15 && now.getMinutes() < 50);
+    }
+
+    function playAlert() {
+        // https://stackoverflow.com/questions/50490304/how-to-make-audio-autoplay-on-chrome
+        // blocks audio
+        // Common sounds:
+        //let alarm = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/outdoor-alarm-sound-looping_zkLnXr4O.mp3";
+        let security = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/hospital-pa-system-speaker-voice-clip-male-security-to-the-er_z1keyDNd.mp3";
+
+        function soundToFrame(sound) { return '<iframe src="' + sound + '" type="audio/mpeg" allow="autoplay" style="display:none"></iframe>'; }
+        function getRandomInt(max) { return Math.floor(Math.random() * Math.floor(max)); }
+        let INIT_DELAY_SECS = 45.0;
+        function addSoundWithDelay(sound, delaySecs) { setTimeout(() => {jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000); }
+        function vampSecurity() {
+            // 5 sec
+            let vamp = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/maxs-vamp-bridge-1_MkpWHZS_.mp3";
+            addSoundWithDelay(vamp, INIT_DELAY_SECS);
+            addSoundWithDelay(security, INIT_DELAY_SECS + 5.0);
+        }
+        function strutSecurity() {
+            // 6 sec
+            let strut = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/walk-it-out_G1NNImHO.mp3";
+            addSoundWithDelay(strut, INIT_DELAY_SECS);
+            addSoundWithDelay(security, INIT_DELAY_SECS + 5.6);
+        }
+        function strollSecurity() {
+            // 7 sec
+            let stroll = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/strolling-along_fyV0ifBu.mp3";
+            addSoundWithDelay(stroll, INIT_DELAY_SECS);
+            addSoundWithDelay(security, INIT_DELAY_SECS + 5.7);
+        }
+        function exitSecurity() {
+            // 12 sec
+            let exit_music = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/exit-stage-right-cut-to-commercial-tv-theme_z1QvMgSO.mp3";
+            addSoundWithDelay(exit_music, INIT_DELAY_SECS);
+            addSoundWithDelay(security, INIT_DELAY_SECS + 12);
+        }
+
+        let jukebox = new Map();
+        jukebox.set(0, vampSecurity);
+        jukebox.set(1, strutSecurity);
+        jukebox.set(2, strollSecurity);
+        jukebox.set(3, exitSecurity);
+
+        let choice = getRandomInt(jukebox.size);
+        log("choice is " + choice);
+        jukebox.get(choice)();
     }
 
     (function guardForLunchBreakDuration() {
         var username = getUserNameInput().val();
+
         jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) { // eslint-disable-line
             //event.preventDefault();
             var now = new Date();
             log("At clock out, time is " + getTimeStringFromDate(now));
             log("Setting value " + username + " to " + now.getTime());
             GM_setValue(username, now.getTime());
+
+            if (isUnexpectedTimeToClockOut()) {
+                playAlert();
+            }
         });
 
         function isLunchHour(now) {
@@ -177,8 +234,8 @@
                 location.reload();
                 log ("TCW: Reloaded as backup fix.");
             }, 85 * 1000);
-
         }
+
     }());
 
 })();
