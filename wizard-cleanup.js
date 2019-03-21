@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.136
+// @version      0.137
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -72,7 +72,7 @@
 
         function soundToFrame(sound) { return '<iframe src="' + sound + '" type="audio/mpeg" allow="autoplay" style="display:none"></iframe>'; }
         function getRandomInt(max) { return Math.floor(Math.random() * Math.floor(max)); }
-        let INIT_DELAY_SECS = 45.0;
+        let INIT_DELAY_SECS = 35.0;
         function addSoundWithDelay(sound, delaySecs) { setTimeout(() => {jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000); }
         function vampSecurity() {
             // 5 sec
@@ -217,23 +217,24 @@
     */
     (function cleanCameraLeakForWindowsHello() {
 
+        let WARNING_DELAY_SECS = 90;
         if(isLoginPage()) {
             setTimeout(function() {
                 let verbiage = "Closing the inactive Wizard page soon.  Please save your work now.";
                 let page_refresh_warning = makeErrorPopup(verbiage);
                 loadAndPlacePopup(page_refresh_warning, 10 * 1000);
-            }, 60 * 1000);
+            }, WARNING_DELAY_SECS * 1000);
 
             // Close Timeclock tab after a while
             setTimeout(function() {
                 log ("TCW: Ready to Close.");
                 window.close();
                 log ("TCW: Closed.");
-            }, 75 * 1000);
+            }, (WARNING_DELAY_SECS + 15) * 1000);
             setTimeout(function() {
                 location.reload();
                 log ("TCW: Reloaded as backup fix.");
-            }, 85 * 1000);
+            }, (WARNING_DELAY_SECS + 25) * 1000);
         }
 
     }());
