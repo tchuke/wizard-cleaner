@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.137
+// @version      0.138
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -60,7 +60,7 @@
     }
     function isUnexpectedTimeToClockOut() {
         let now = new Date();
-        return (now.getHours() == 14 && now.getMinutes() > 15) || (now.getHours == 15 && now.getMinutes() < 50);
+        return (now.getHours() == 14 && now.getMinutes() > 15) || (now.getHours() == 15 && now.getMinutes() < 50);
     }
 
     function playAlert() {
