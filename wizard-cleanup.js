@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.139
+// @version      0.140
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -110,24 +110,50 @@
         jukebox.get(choice)();
     }
 
+    (function warnOfDefaultBreakInProgress() {
+        let clockoutButton = jQuery("button#btnLocationClockout");
+        if (clockoutButton.length) {
+            var username = getUserNameInput().val();
+            let clockInTime = GM_getValue(getClockInKey(username));
+            if (!isNaN(clockInTime)) {
+                let clockInDate = new Date();
+                clockInDate.setTime(clockInTime);
+                let clockinHour = clockInDate.getHours();
+                let clockinMinutes = clockInDate.getMinutes();
+                let BREAK_TRIGGER_HOURS = 5;
+                let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
+                let now = new Date();
+                let BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * 60 * 60 * 1000;
+                let time_clocked_in = now - clockInTime;
+                if (time_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
+                    jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS + " hours after clock-in, I started my default, 1.2 hour lunch break.");
+                    clockoutButton.text("Clock Out for Today, " + username);
+                }
+            }
+        }
+    }());
+
+    function getClockInKey(username) { return username + "-in"; }
+    function getClockOutKey(username) { return username + "-out"; }
+
+
     (function guardForLunchBreakDuration() {
         var username = getUserNameInput().val();
 
+        function doOnClockActionCompletion(success_fun, fail_fun) {
+            setTimeout(() => {
+                let jSuccess_count_after = jQuery("div#jSuccess:visible").length;
+                log("success after: " + jSuccess_count_after);
+                if(jSuccess_count_after) {
+                    success_fun();
+                } else {
+                    fail_fun();
+                }
+            }, 2500);
+        }
 
         jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) { // eslint-disable-line
             //event.preventDefault();
-            function doOnClockoutCompletion(success_fun, fail_fun) {
-                setTimeout(() => {
-                    let jSuccess_count_after = jQuery("div#jSuccess:visible").length;
-                    log("success after: " + jSuccess_count_after);
-                    if(jSuccess_count_after) {
-                        success_fun();
-                    } else {
-                        fail_fun();
-                    }
-                }, 2500);
-            }
-
             var now = new Date();
             let clockoutTime = now.getTime();
             log("At clock out, time is " + getTimeStringFromDate(now));
@@ -135,12 +161,22 @@
             if (isUnexpectedTimeToClockOut()) {
                 playAlert();
             }
-
-            doOnClockoutCompletion(
-                () => { log("Setting value " + username + " to " + clockoutTime); GM_setValue(username, clockoutTime); },
+            doOnClockActionCompletion(
+                () => { log("Setting value " + username + " to " + clockoutTime); GM_setValue(getClockOutKey(username), clockoutTime); },
                 () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
             );
+        });
 
+        jQuery("button#btnLocationClockin").click(function handleClockInClick(event) { // eslint-disable-line
+            //event.preventDefault();
+            var now = new Date();
+            let clockinTime = now.getTime();
+            log("At clock out, time is " + getTimeStringFromDate(now));
+
+            doOnClockActionCompletion(
+                () => { log("Setting value " + username + " to " + clockinTime); GM_setValue(getClockInKey(username), clockinTime); },
+                () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
+            );
         });
 
         function isLunchHour(now) {
@@ -161,7 +197,7 @@
                 log("Not a lunch hour, so person gets a pass.");
             } else {
                 var user = getUserNameInput().val();
-                var stored_clockout = GM_getValue(user);
+                var stored_clockout = GM_getValue(getClockOutKey(user));
                 log("Getting value " + user + ". Is " + stored_clockout);
                 let no_clockout_stored_today_on_this_machine = !stored_clockout;
                 if(no_clockout_stored_today_on_this_machine) {
