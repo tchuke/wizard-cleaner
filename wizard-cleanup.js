@@ -29,7 +29,7 @@
         let now = new Date();
         let hours = now.getHours();
         log("looking to purge.");
-        if(hours < 9) {
+        if (hours < 9) {
             log("Early morning, so time to purge clockout values:");
             let keys = GM_listValues();
             for (let key of keys) {
@@ -37,7 +37,7 @@
                 GM_deleteValue(key);
             }
         }
-    }());
+    }()); // End of clearClockOutValuesEachMorning() and invoke
 
     // We need to hide logged-in clock buttons as we are not guarding them right now.
     (function hideDashboardClockButtons() {
@@ -46,22 +46,8 @@
     }());
 
     function getUserNameInput() { return jQuery("input#UserName");}
-    function getLoginForm() { return jQuery("form[action='/Login']");}
-
-    function isLoginPage() {
-        return getLoginForm().length;
-    }
-
     function getPasswordField() { return jQuery("input#Password"); }
-    function getTimeStringFromDate(date) {
-        /* eslint-disable */
-        return date.getHours() + ":" + (date.getMinutes() < 10 ? "0": "") + date.getMinutes();
-        /* eslint-enable */
-    }
-    function isUnexpectedTimeToClockOut() {
-        let now = new Date();
-        return (now.getHours() == 14 && now.getMinutes() > 15) || (now.getHours() == 15 && now.getMinutes() < 50);
-    }
+    function passwordIsEmpty() { return getPasswordField().val().trim().length == 0; }
 
     function playAlert() {
         // https://stackoverflow.com/questions/50490304/how-to-make-audio-autoplay-on-chrome
@@ -110,6 +96,9 @@
         jukebox.get(choice)();
     }
 
+    function getClockInKey(username) { return username + "-in"; }
+    function getClockOutKey(username) { return username + "-out"; }
+
     (function warnOfDefaultBreakInProgress() {
         let clockoutButton = jQuery("button#btnLocationClockout");
         if (clockoutButton.length) {
@@ -133,18 +122,25 @@
         }
     }());
 
-    function getClockInKey(username) { return username + "-in"; }
-    function getClockOutKey(username) { return username + "-out"; }
+    function getTimeStringFromDate(date) {
+        /* eslint-disable */
+        return date.getHours() + ":" + (date.getMinutes() < 10 ? "0": "") + date.getMinutes();
+        /* eslint-enable */
+    }
 
+    (function tallySuccessfulClockActions() {
+        function isUnexpectedTimeToClockOut() {
+            let now = new Date();
+            return (now.getHours() == 14 && now.getMinutes() > 15) || (now.getHours() == 15 && now.getMinutes() < 50);
+        }
 
-    (function guardForLunchBreakDuration() {
         var username = getUserNameInput().val();
 
         function doOnClockActionCompletion(success_fun, fail_fun) {
             setTimeout(() => {
                 let jSuccess_count_after = jQuery("div#jSuccess:visible").length;
                 log("success after: " + jSuccess_count_after);
-                if(jSuccess_count_after) {
+                if (jSuccess_count_after) {
                     success_fun();
                 } else {
                     fail_fun();
@@ -171,61 +167,20 @@
             //event.preventDefault();
             var now = new Date();
             let clockinTime = now.getTime();
-            log("At clock out, time is " + getTimeStringFromDate(now));
+            log("At clock in, time is " + getTimeStringFromDate(now));
 
             doOnClockActionCompletion(
                 () => { log("Setting value " + username + " to " + clockinTime); GM_setValue(getClockInKey(username), clockinTime); },
                 () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
             );
         });
+    }()); // End of tallySuccessfulClockActions() and invoke
 
-        function isLunchHour(now) {
-            let hours = now.getHours();
-            return (hours > 11 && hours < 16);
-        }
-
-        function passwordIsEmpty() { return getPasswordField().val().trim().length == 0; }
-
-        jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
-            //event.preventDefault();
-            let now = new Date();
-            if(DURATION_GUARD_DISABLED) {
-                log("duration feature disabled");
-            } else if(passwordIsEmpty()) {
-                log("invalid password so defer to app.");
-            } else if(!isLunchHour(now)) {
-                log("Not a lunch hour, so person gets a pass.");
-            } else {
-                var user = getUserNameInput().val();
-                var stored_clockout = GM_getValue(getClockOutKey(user));
-                log("Getting value " + user + ". Is " + stored_clockout);
-                let no_clockout_stored_today_on_this_machine = !stored_clockout;
-                if(no_clockout_stored_today_on_this_machine) {
-                    log("We don't know where they clocked out. Forgiving.");
-                } else {
-                    // Clock-Out time is here for analysis
-                    var clock_out_millis = stored_clockout;
-                    log("At clock in, time is " + now.getTime() + " or " + getTimeStringFromDate(now));
-                    let millis_away = now.getTime() - clock_out_millis;
-                    let _40_MINUTES_MILLIS = 40 * 60 * 1000;
-                    let MIN_BREAK_TIME_MILLIS = _40_MINUTES_MILLIS;
-                    let break_is_still_too_short = (millis_away < MIN_BREAK_TIME_MILLIS);
-                    var seconds_away = millis_away / 1000;
-                    var minutes_away = Math.floor(seconds_away / 60);
-                    if(break_is_still_too_short) {
-                        event.preventDefault();
-                        log("Too short");
-                        let verbiage = "You are only " + minutes_away + " minutes into your lunch break. Please try again later. ";
-                        let too_early_popup_alert = makeErrorPopup(verbiage);
-                        loadAndPlacePopup(too_early_popup_alert, 5250);
-                    } else {
-                        // Good break.
-                        log("Good break after " + millis_away + " millis or " + minutes_away + " minutes.");
-                    }
-                }
-            }
-        });
-    }());
+    // HELPER FUNCTIONS invoked in multiple places:
+    function getLoginForm() { return jQuery("form[action='/Login']");}
+    function isLoginPage() {
+        return getLoginForm().length;
+    }
 
     function makeErrorPopup(verbiage) {
         var height = jQuery(window).height();
@@ -241,7 +196,7 @@
         var CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
         var target = getLoginForm(); //jQuery("div#jOverlay");
         log("Found target? " + target.length);
-        if(target.length) {
+        if (target.length) {
             popup.hide().insertAfter(target).fadeIn();
         }
         popup.find(CLOSE_WINDOW_SELECTOR).click((event) => {
@@ -253,18 +208,65 @@
         setTimeout(() => popup.remove(), fadeOutDelay + 2750);
     }
 
-    (function cleanClockInScreen() {
+    (function guardForLunchBreakDuration() {
+        function isLunchHour(now) {
+            let hours = now.getHours();
+            return (hours > 11 && hours < 16);
+        }
+
+        jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
+            //event.preventDefault();
+            let now = new Date();
+            if (DURATION_GUARD_DISABLED) {
+                log("duration feature disabled");
+            } else if (passwordIsEmpty()) {
+                log("invalid password so defer to app.");
+            } else if (!isLunchHour(now)) {
+                log("Not a lunch hour, so person gets a pass.");
+            } else {
+                var user = getUserNameInput().val();
+                var stored_clockout = GM_getValue(getClockOutKey(user));
+                log("Getting value " + user + ". Is " + stored_clockout);
+                let no_clockout_stored_today_on_this_machine = !stored_clockout;
+                if (no_clockout_stored_today_on_this_machine) {
+                    log("We don't know where they clocked out. Forgiving.");
+                } else {
+                    // Clock-Out time is here for analysis
+                    var clock_out_millis = stored_clockout;
+                    log("At clock in, time is " + now.getTime() + " or " + getTimeStringFromDate(now));
+                    let millis_away = now.getTime() - clock_out_millis;
+                    let _40_MINUTES_MILLIS = 40 * 60 * 1000;
+                    let MIN_BREAK_TIME_MILLIS = _40_MINUTES_MILLIS;
+                    let break_is_still_too_short = (millis_away < MIN_BREAK_TIME_MILLIS);
+                    var seconds_away = millis_away / 1000;
+                    var minutes_away = Math.floor(seconds_away / 60);
+                    if (break_is_still_too_short) {
+                        event.preventDefault();
+                        log("Too short");
+                        let verbiage = "You are only " + minutes_away + " minutes into your lunch break. Please try again later. ";
+                        let too_early_popup_alert = makeErrorPopup(verbiage);
+                        loadAndPlacePopup(too_early_popup_alert, 5250);
+                    } else {
+                        // Good break.
+                        log("Good break after " + millis_away + " millis or " + minutes_away + " minutes.");
+                    }
+                }
+            }
+        });
+    }()); // End of guardForLunchBreakDuration() and invoke
+
+    (function guardForLunchBreakDuration() {
         (function setLocationToSoleValue() {
             let clock_in_select = jQuery("select#ddlLocation");
-            if(clock_in_select.length) {
+            if (clock_in_select.length) {
                 let options_with_value = clock_in_select.find("option[value]");
-                if(options_with_value.length) {
+                if (options_with_value.length) {
                     let last_option_value = options_with_value.last().attr("value");
                     clock_in_select.val(last_option_value);
                 }
             }
         }());
-    }());
+    }()); //End of guardForLunchBreakDuration() and invoke
 
     /*
     Camera-on in tab prevents Windows Hello from using camera.
@@ -272,25 +274,24 @@
     (function cleanCameraLeakForWindowsHello() {
 
         let WARNING_DELAY_SECS = 90;
-        if(isLoginPage()) {
-            setTimeout(function() {
+        if (isLoginPage()) {
+            setTimeout(() => {
                 let verbiage = "Closing the inactive Wizard page soon.  Please save your work now.";
                 let page_refresh_warning = makeErrorPopup(verbiage);
                 loadAndPlacePopup(page_refresh_warning, 10 * 1000);
             }, WARNING_DELAY_SECS * 1000);
 
             // Close Timeclock tab after a while
-            setTimeout(function() {
+            setTimeout(() => {
                 log ("TCW: Ready to Close.");
                 window.close();
                 log ("TCW: Closed.");
             }, (WARNING_DELAY_SECS + 15) * 1000);
-            setTimeout(function() {
+            setTimeout(() => {
                 location.reload();
                 log ("TCW: Reloaded as backup fix.");
             }, (WARNING_DELAY_SECS + 25) * 1000);
         }
+    }()); // End of cleanCameraLeakForWindowsHello() and invoke
 
-    }());
-
-})();
+})(); // End of original jQuery ready
