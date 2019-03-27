@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.140
+// @version      0.141
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -25,19 +25,22 @@
     function log(msg) {  console.log(msg);  }
     /* eslint-enable */
 
-    (function clearClockOutValuesEachMorning() {
+    (function clearClockActionTimesPeriodically() {
         let now = new Date();
-        let hours = now.getHours();
+        let theDay = now.getDay();
+        let theHour = now.getHours();
+        let FRIDAY = 5;
         log("looking to purge.");
-        if (hours < 9) {
-            log("Early morning, so time to purge clockout values:");
+        let isLateFriday = (theDay === FRIDAY && theHour > 16);
+        if (isLateFriday) {
+            log("Early Friday evening, so time to purge clockout values:");
             let keys = GM_listValues();
             for (let key of keys) {
                 log(key);
                 GM_deleteValue(key);
             }
         }
-    }()); // End of clearClockOutValuesEachMorning() and invoke
+    }()); // End of clearClockActionTimesPeriodically() and invoke
 
     // We need to hide logged-in clock buttons as we are not guarding them right now.
     (function hideDashboardClockButtons() {
@@ -47,7 +50,7 @@
 
     function getUserNameInput() { return jQuery("input#UserName");}
     function getPasswordField() { return jQuery("input#Password"); }
-    function passwordIsEmpty() { return getPasswordField().val().trim().length == 0; }
+    function passwordIsEmpty() { return getPasswordField().val().trim().length === 0; }
 
     function playAlert() {
         // https://stackoverflow.com/questions/50490304/how-to-make-audio-autoplay-on-chrome
@@ -104,19 +107,24 @@
         if (clockoutButton.length) {
             var username = getUserNameInput().val();
             let clockInTime = GM_getValue(getClockInKey(username));
-            if (!isNaN(clockInTime)) {
+            if (isNaN(clockInTime)) {
+                log("no clock in time found for this user.");
+            } else {
+                let clockingOutDate = new Date();
                 let clockInDate = new Date();
                 clockInDate.setTime(clockInTime);
-                let clockinHour = clockInDate.getHours();
-                let clockinMinutes = clockInDate.getMinutes();
-                let BREAK_TRIGGER_HOURS = 5;
-                let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
-                let now = new Date();
-                let BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * 60 * 60 * 1000;
-                let time_clocked_in = now - clockInTime;
-                if (time_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
-                    jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS + " hours after clock-in, I started my default, 1.2 hour lunch break.");
-                    clockoutButton.text("Clock Out for Today, " + username);
+                let userClockedInToday = (clockInDate.getDate() === clockingOutDate.getDate());
+                if (userClockedInToday) {
+                    let BREAK_TRIGGER_HOURS = 5;
+                    let BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * 60 * 60 * 1000;
+                    let duration_clocked_in = clockingOutDate - clockInTime;
+                    if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
+                        let clockinHour = clockInDate.getHours();
+                        let clockinMinutes = clockInDate.getMinutes();
+                        let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
+                        jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS + " hours after clock-in, I started my default, 1.2 hour lunch break.");
+                        clockoutButton.text("Clock Out for Today, " + username);
+                    }
                 }
             }
         }
@@ -131,7 +139,7 @@
     (function tallySuccessfulClockActions() {
         function isUnexpectedTimeToClockOut() {
             let now = new Date();
-            return (now.getHours() == 14 && now.getMinutes() > 15) || (now.getHours() == 15 && now.getMinutes() < 50);
+            return (now.getHours() === 14 && now.getMinutes() > 15) || (now.getHours() === 15 && now.getMinutes() < 50);
         }
 
         var username = getUserNameInput().val();
@@ -227,7 +235,7 @@
                 var user = getUserNameInput().val();
                 var stored_clockout = GM_getValue(getClockOutKey(user));
                 log("Getting value " + user + ". Is " + stored_clockout);
-                let no_clockout_stored_today_on_this_machine = !stored_clockout;
+                let no_clockout_stored_today_on_this_machine = isNaN(stored_clockout);
                 if (no_clockout_stored_today_on_this_machine) {
                     log("We don't know where they clocked out. Forgiving.");
                 } else {
