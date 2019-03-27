@@ -33,7 +33,7 @@
         log("looking to purge.");
         let isLateFriday = (theDay === FRIDAY && theHour > 16);
         if (isLateFriday) {
-            log("Early Friday evening, so time to purge clockout values:");
+            log("Early Friday evening, so time to purge clock action values:");
             let keys = GM_listValues();
             for (let key of keys) {
                 log(key);
@@ -119,6 +119,9 @@
                     let BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * 60 * 60 * 1000;
                     let duration_clocked_in = clockingOutDate - clockInTime;
                     if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
+                        let break_warn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
+                        break_warn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
+                        jQuery("div.modal-body").prepend(break_warn);
                         let clockinHour = clockInDate.getHours();
                         let clockinMinutes = clockInDate.getMinutes();
                         let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
