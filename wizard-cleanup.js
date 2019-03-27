@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.141
+// @version      0.142
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -56,36 +56,44 @@
         // https://stackoverflow.com/questions/50490304/how-to-make-audio-autoplay-on-chrome
         // blocks audio
         // Common sounds:
-        //let alarm = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/outdoor-alarm-sound-looping_zkLnXr4O.mp3";
+        let alarm = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/outdoor-alarm-sound-looping_zkLnXr4O.mp3";
         let security = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/hospital-pa-system-speaker-voice-clip-male-security-to-the-er_z1keyDNd.mp3";
 
         function soundToFrame(sound) { return '<iframe src="' + sound + '" type="audio/mpeg" allow="autoplay" style="display:none"></iframe>'; }
         function getRandomInt(max) { return Math.floor(Math.random() * Math.floor(max)); }
         let INIT_DELAY_SECS = 35.0;
-        function addSoundWithDelay(sound, delaySecs) { setTimeout(() => {jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000); }
+        function addSoundWithDelay(sound, delaySecs, prob) {
+            if (!prob || Math.random() < prob) {
+                setTimeout(() => {jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000);
+            }
+        }
         function vampSecurity() {
             // 5 sec
             let vamp = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/maxs-vamp-bridge-1_MkpWHZS_.mp3";
             addSoundWithDelay(vamp, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 5.0);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 7.3, 2/5);
         }
         function strutSecurity() {
             // 6 sec
             let strut = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/walk-it-out_G1NNImHO.mp3";
             addSoundWithDelay(strut, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 5.6);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 7.9, 2/5);
         }
         function strollSecurity() {
             // 7 sec
             let stroll = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/strolling-along_fyV0ifBu.mp3";
             addSoundWithDelay(stroll, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 5.7);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 8.9, 2/5);
         }
         function exitSecurity() {
             // 12 sec
             let exit_music = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/exit-stage-right-cut-to-commercial-tv-theme_z1QvMgSO.mp3";
             addSoundWithDelay(exit_music, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 12);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 6.0, 1/2);
         }
 
         let jukebox = new Map();
