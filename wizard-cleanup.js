@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.142
+// @version      0.143
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -110,33 +110,42 @@
     function getClockInKey(username) { return username + "-in"; }
     function getClockOutKey(username) { return username + "-out"; }
 
-    (function warnOfDefaultBreakInProgress() {
+    (function warnClockingOutUserOfDefaultBreakInProgress() {
         let clockoutButton = jQuery("button#btnLocationClockout");
         if (clockoutButton.length) {
             var username = getUserNameInput().val();
             let clockInTime = GM_getValue(getClockInKey(username));
             if (isNaN(clockInTime)) {
                 log("no clock in time found for this user.");
-            } else {
-                let clockingOutDate = new Date();
-                let clockInDate = new Date();
-                clockInDate.setTime(clockInTime);
-                let userClockedInToday = (clockInDate.getDate() === clockingOutDate.getDate());
-                if (userClockedInToday) {
-                    let BREAK_TRIGGER_HOURS = 5;
-                    let BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * 60 * 60 * 1000;
-                    let duration_clocked_in = clockingOutDate - clockInTime;
-                    if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
-                        let break_warn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
-                        break_warn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
-                        jQuery("div.modal-body").prepend(break_warn);
-                        let clockinHour = clockInDate.getHours();
-                        let clockinMinutes = clockInDate.getMinutes();
-                        let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
-                        jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS + " hours after clock-in, I started my default, 1.2 hour lunch break.");
-                        clockoutButton.text("Clock Out for Today, " + username);
-                    }
+                return;
+            }
+            let clockOutTime = GM_getValue(getClockOutKey(username));
+            let isAlreadyClockedOut = !isNaN(clockOutTime) && (clockOutTime > clockInTime);
+            if (isAlreadyClockedOut) {
+                log("user appears to not be clocked in, so skipping clock-out test.");
+                return;
+            }
+            log("user is clocked in, so proceeding with clock-out test.");
+            let clockingOutDate = new Date();
+            let clockInDate = new Date();
+            clockInDate.setTime(clockInTime);
+            let userClockedInToday = (clockInDate.getDate() === clockingOutDate.getDate());
+            if (userClockedInToday) {
+                let BREAK_TRIGGER_HOURS = 5;
+                let BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * 60 * 60 * 1000;
+                let duration_clocked_in = clockingOutDate - clockInTime;
+                if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
+                    let break_warn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
+                    break_warn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
+                    jQuery("div.modal-body").prepend(break_warn);
+                    let clockinHour = clockInDate.getHours();
+                    let clockinMinutes = clockInDate.getMinutes();
+                    let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
+                    jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS + " hours after clock-in, I started my default, 1.2 hour lunch break.");
+                    clockoutButton.text("Clock Out for Today, " + username);
                 }
+            } else {
+                log("user did not clock in today, so skipping clock-out test.");
             }
         }
     }());
