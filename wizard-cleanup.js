@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.143
+// @version      0.144
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -150,11 +150,12 @@
         }
     }());
 
-    function getTimeStringFromDate(date) {
-        /* eslint-disable */
-        return date.getHours() + ":" + (date.getMinutes() < 10 ? "0": "") + date.getMinutes();
-        /* eslint-enable */
-    }
+    const time_formatter = new Intl.DateTimeFormat("en-US", {
+        "hour": "2-digit",
+        "hour12": true,
+        "minute": "2-digit",
+        "second": "2-digit"
+    });
 
     (function tallySuccessfulClockActions() {
         function isUnexpectedTimeToClockOut() {
@@ -180,7 +181,7 @@
             //event.preventDefault();
             var now = new Date();
             let clockoutTime = now.getTime();
-            log("At clock out, time is " + getTimeStringFromDate(now));
+            log("At clock out, time is " + time_formatter.format(now));
 
             if (isUnexpectedTimeToClockOut()) {
                 playAlert();
@@ -195,7 +196,7 @@
             //event.preventDefault();
             var now = new Date();
             let clockinTime = now.getTime();
-            log("At clock in, time is " + getTimeStringFromDate(now));
+            log("At clock in, time is " + time_formatter.format(now));
 
             doOnClockActionCompletion(
                 () => { log("Setting value " + username + " to " + clockinTime); GM_setValue(getClockInKey(username), clockinTime); },
@@ -261,7 +262,7 @@
                 } else {
                     // Clock-Out time is here for analysis
                     var clock_out_millis = stored_clockout;
-                    log("At clock in, time is " + now.getTime() + " or " + getTimeStringFromDate(now));
+                    log("At clock in, time is " + now.getTime() + " or " + time_formatter.format(now));
                     let millis_away = now.getTime() - clock_out_millis;
                     let _40_MINUTES_MILLIS = 40 * 60 * 1000;
                     let MIN_BREAK_TIME_MILLIS = _40_MINUTES_MILLIS;
