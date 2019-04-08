@@ -44,11 +44,11 @@
 
     // We need to hide logged-in clock buttons as we are not guarding them right now.
     (function hideDashboardClockButtons() {
-        var dash_clock_buttons = jQuery("div#dasboard-btn").find("a#clock_out_link, a#clock_in_link");
+        let dash_clock_buttons = jQuery("div#dasboard-btn").find("a#clock_out_link, a#clock_in_link");
         dash_clock_buttons.hide();
     }());
 
-    function getUserNameInput() { return jQuery("input#UserName");}
+    function getUserNameInput() { return jQuery("input#UserName"); }
     function getPasswordField() { return jQuery("input#Password"); }
     function passwordIsEmpty() { return getPasswordField().val().trim().length === 0; }
 
@@ -64,7 +64,7 @@
         let INIT_DELAY_SECS = 35.0;
         function addSoundWithDelay(sound, delaySecs, prob) {
             if (!prob || Math.random() < prob) {
-                setTimeout(() => {jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000);
+                setTimeout(() => { jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000);
             }
         }
         function vampSecurity() {
@@ -72,28 +72,28 @@
             let vamp = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/maxs-vamp-bridge-1_MkpWHZS_.mp3";
             addSoundWithDelay(vamp, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 5.0);
-            addSoundWithDelay(alarm, INIT_DELAY_SECS + 7.3, 2/5);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 7.3, 2 / 5);
         }
         function strutSecurity() {
             // 6 sec
             let strut = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/walk-it-out_G1NNImHO.mp3";
             addSoundWithDelay(strut, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 5.6);
-            addSoundWithDelay(alarm, INIT_DELAY_SECS + 7.9, 2/5);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 7.9, 2 / 5);
         }
         function strollSecurity() {
             // 7 sec
             let stroll = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/strolling-along_fyV0ifBu.mp3";
             addSoundWithDelay(stroll, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 5.7);
-            addSoundWithDelay(alarm, INIT_DELAY_SECS + 8.9, 2/5);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 8.9, 2 / 5);
         }
         function exitSecurity() {
             // 12 sec
             let exit_music = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/exit-stage-right-cut-to-commercial-tv-theme_z1QvMgSO.mp3";
             addSoundWithDelay(exit_music, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 12);
-            addSoundWithDelay(alarm, INIT_DELAY_SECS + 6.0, 1/2);
+            addSoundWithDelay(alarm, INIT_DELAY_SECS + 6.0, 1 / 2);
         }
 
         let jukebox = new Map();
@@ -113,7 +113,7 @@
     (function warnClockingOutUserOfDefaultBreakInProgress() {
         let clockoutButton = jQuery("button#btnLocationClockout");
         if (clockoutButton.length) {
-            var username = getUserNameInput().val();
+            let username = getUserNameInput().val();
             let clockInTime = GM_getValue(getClockInKey(username));
             if (isNaN(clockInTime)) {
                 log("no clock in time found for this user.");
@@ -163,7 +163,7 @@
             return (now.getHours() === 14 && now.getMinutes() > 15) || (now.getHours() === 15 && now.getMinutes() < 50);
         }
 
-        var username = getUserNameInput().val();
+        let username = getUserNameInput().val();
 
         function doOnClockActionCompletion(success_fun, fail_fun) {
             setTimeout(() => {
@@ -179,7 +179,7 @@
 
         jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) { // eslint-disable-line
             //event.preventDefault();
-            var now = new Date();
+            let now = new Date();
             let clockoutTime = now.getTime();
             log("At clock out, time is " + time_formatter.format(now));
 
@@ -194,7 +194,7 @@
 
         jQuery("button#btnLocationClockin").click(function handleClockInClick(event) { // eslint-disable-line
             //event.preventDefault();
-            var now = new Date();
+            let now = new Date();
             let clockinTime = now.getTime();
             log("At clock in, time is " + time_formatter.format(now));
 
@@ -206,15 +206,15 @@
     }()); // End of tallySuccessfulClockActions() and invoke
 
     // HELPER FUNCTIONS invoked in multiple places:
-    function getLoginForm() { return jQuery("form[action='/Login']");}
+    function getLoginForm() { return jQuery("form[action='/Login']"); }
     function isLoginPage() {
         return getLoginForm().length;
     }
 
     function makeErrorPopup(verbiage) {
-        var height = jQuery(window).height();
-        var width = jQuery(window).width();
-        var popup = jQuery('<div id="jError" style="opacity: 1; z-index: 10000; min-width: 200px; top: ' + (Math.floor(height/5)+0) + 'px; left: ' + (Math.floor(width/5)+0) + 'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
+        let height = jQuery(window).height();
+        let width = jQuery(window).width();
+        let popup = jQuery('<div id="jError" style="opacity: 1; z-index: 10000; min-width: 200px; top: ' + (Math.floor(height / 5) + 0) + 'px; left: ' + (Math.floor(width / 5) + 0) + 'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
         return popup;
     }
 
@@ -222,16 +222,16 @@
         function clearPasswordField() {
             getPasswordField().val('');
         }
-        var CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
-        var target = getLoginForm(); //jQuery("div#jOverlay");
+        let CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
+        let target = getLoginForm(); //jQuery("div#jOverlay");
         log("Found target? " + target.length);
         if (target.length) {
             popup.hide().insertAfter(target).fadeIn();
         }
-        popup.find(CLOSE_WINDOW_SELECTOR).click((event) => {
+        popup.find(CLOSE_WINDOW_SELECTOR).click(event => {
             let the_popup = jQuery(event.delegateTarget).parent();
             the_popup.fadeOut();
-        } );
+        });
         setTimeout(() => clearPasswordField(), fadeOutDelay - 1500);
         setTimeout(() => popup.fadeOut(), fadeOutDelay);
         setTimeout(() => popup.remove(), fadeOutDelay + 2750);
@@ -253,22 +253,22 @@
             } else if (!isLunchHour(now)) {
                 log("Not a lunch hour, so person gets a pass.");
             } else {
-                var user = getUserNameInput().val();
-                var stored_clockout = GM_getValue(getClockOutKey(user));
+                let user = getUserNameInput().val();
+                let stored_clockout = GM_getValue(getClockOutKey(user));
                 log("Getting value " + user + ". Is " + stored_clockout);
                 let no_clockout_stored_today_on_this_machine = isNaN(stored_clockout);
                 if (no_clockout_stored_today_on_this_machine) {
                     log("We don't know where they clocked out. Forgiving.");
                 } else {
                     // Clock-Out time is here for analysis
-                    var clock_out_millis = stored_clockout;
+                    let clock_out_millis = stored_clockout;
                     log("At clock in, time is " + now.getTime() + " or " + time_formatter.format(now));
                     let millis_away = now.getTime() - clock_out_millis;
-                    let _40_MINUTES_MILLIS = 40 * 60 * 1000;
-                    let MIN_BREAK_TIME_MILLIS = _40_MINUTES_MILLIS;
+                    let MY_40_MINUTES_MILLIS = 40 * 60 * 1000;
+                    let MIN_BREAK_TIME_MILLIS = MY_40_MINUTES_MILLIS;
                     let break_is_still_too_short = (millis_away < MIN_BREAK_TIME_MILLIS);
-                    var seconds_away = millis_away / 1000;
-                    var minutes_away = Math.floor(seconds_away / 60);
+                    let seconds_away = millis_away / 1000;
+                    let minutes_away = Math.floor(seconds_away / 60);
                     if (break_is_still_too_short) {
                         event.preventDefault();
                         log("Too short");
@@ -329,15 +329,15 @@
 
             // Close Timeclock tab after a while
             setTimeout(() => {
-                log ("TCW: Ready to Close.");
+                log("TCW: Ready to Close.");
                 window.close();
-                log ("TCW: Closed.");
+                log("TCW: Closed.");
             }, (WARNING_DELAY_SECS + 15) * 1000);
             setTimeout(() => {
                 location.reload();
-                log ("TCW: Reloaded as backup fix.");
+                log("TCW: Reloaded as backup fix.");
             }, (WARNING_DELAY_SECS + 25) * 1000);
         }
     }()); // End of cleanCameraLeakForWindowsHello() and invoke
 
-})(); // End of original jQuery ready
+}()); // End of original jQuery ready
