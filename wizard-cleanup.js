@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.144
+// @version      0.145
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -284,18 +284,35 @@
         });
     }()); // End of guardForLunchBreakDuration() and invoke
 
-    (function guardForLunchBreakDuration() {
-        (function setLocationToSoleValue() {
-            let clock_in_select = jQuery("select#ddlLocation");
-            if (clock_in_select.length) {
-                let options_with_value = clock_in_select.find("option[value]");
-                if (options_with_value.length) {
-                    let last_option_value = options_with_value.last().attr("value");
-                    clock_in_select.val(last_option_value);
-                }
+    (function guardForEarlyClockIn() {
+        function isTooEarlyInMorning(now) {
+            let hours = now.getHours();
+            let mins = now.getMinutes();
+            return (hours < 8 || (hours === 8 && mins < 40));
+        }
+
+        jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
+            let now = new Date();
+            if (isTooEarlyInMorning(now)) {
+                event.preventDefault();
+                log("Too early");
+                let verbiage = "The morning shift has not yet begun.  Please arrive at shift start time for clock-in.";
+                let too_early_popup_alert = makeErrorPopup(verbiage);
+                loadAndPlacePopup(too_early_popup_alert, 5250);
             }
-        }());
-    }()); //End of guardForLunchBreakDuration() and invoke
+        });
+    }()); // End of guardForEarlyClockIn() and invoke
+
+    (function setLocationToSoleValue() {
+        let clock_in_select = jQuery("select#ddlLocation");
+        if (clock_in_select.length) {
+            let options_with_value = clock_in_select.find("option[value]");
+            if (options_with_value.length) {
+                let last_option_value = options_with_value.last().attr("value");
+                clock_in_select.val(last_option_value);
+            }
+        }
+    }());
 
     /*
     Camera-on in tab prevents Windows Hello from using camera.
