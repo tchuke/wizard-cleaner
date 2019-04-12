@@ -19,17 +19,15 @@
 
 (function() {
 
-    let DURATION_GUARD_DISABLED = false;
-
     /* eslint-disable */
-    function log(msg) {  console.log(msg);  }
+    function log(...msg) {  console.log(...msg);  }
     /* eslint-enable */
 
     (function clearClockActionTimesPeriodically() {
         let now = new Date();
         let theDay = now.getDay();
         let theHour = now.getHours();
-        let FRIDAY = 5;
+        const FRIDAY = 5;
         log("looking to purge.");
         let isLateFriday = (theDay === FRIDAY && theHour > 16);
         if (isLateFriday) {
@@ -56,12 +54,13 @@
         // https://stackoverflow.com/questions/50490304/how-to-make-audio-autoplay-on-chrome
         // blocks audio
         // Common sounds:
-        let alarm = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/outdoor-alarm-sound-looping_zkLnXr4O.mp3";
-        let security = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/hospital-pa-system-speaker-voice-clip-male-security-to-the-er_z1keyDNd.mp3";
+        const alarm = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/outdoor-alarm-sound-looping_zkLnXr4O.mp3";
+        const security = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/hospital-pa-system-speaker-voice-clip-male-security-to-the-er_z1keyDNd.mp3";
 
         function soundToFrame(sound) { return '<iframe src="' + sound + '" type="audio/mpeg" allow="autoplay" style="display:none"></iframe>'; }
         function getRandomInt(max) { return Math.floor(Math.random() * Math.floor(max)); }
-        let INIT_DELAY_SECS = 35.0;
+
+        const INIT_DELAY_SECS = 35.0;
         function addSoundWithDelay(sound, delaySecs, prob) {
             if (!prob || Math.random() < prob) {
                 setTimeout(() => { jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000);
@@ -141,7 +140,8 @@
                     let clockinHour = clockInDate.getHours();
                     let clockinMinutes = clockInDate.getMinutes();
                     let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
-                    jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS + " hours after clock-in, I started my default, 1.2 hour lunch break.");
+                    jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS +
+                                                          " hours after clock-in, I started my default, 1.2 hour lunch break.");
                     clockoutButton.text("Clock Out for Today, " + username);
                 }
             } else {
@@ -150,7 +150,7 @@
         }
     }());
 
-    const time_formatter = new Intl.DateTimeFormat("en-US", {
+    const TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
         "hour": "2-digit",
         "hour12": true,
         "minute": "2-digit",
@@ -170,6 +170,7 @@
             function isTooEarlyToLeaveForTheDay(now) {
                 return now.getHours() < 16;
             }
+
             let time = new Date();
             return isEarlyAM(time) || (isAfterLunchHour(time) && isTooEarlyToLeaveForTheDay(time));
         }
@@ -188,11 +189,10 @@
             }, 2500);
         }
 
-        jQuery("button#btnLocationClockout").click(function handleClockOutClick(event) { // eslint-disable-line
-            //event.preventDefault();
+        jQuery("button#btnLocationClockout").click(function handleClockOutClick() {
             let now = new Date();
             let clockoutTime = now.getTime();
-            log("At clock out, time is " + time_formatter.format(now));
+            log("At clock out, time is " + TIME_FORMATTER.format(now));
 
             if (isUnexpectedTimeToClockOut()) {
                 playAlert();
@@ -203,11 +203,10 @@
             );
         });
 
-        jQuery("button#btnLocationClockin").click(function handleClockInClick(event) { // eslint-disable-line
-            //event.preventDefault();
+        jQuery("button#btnLocationClockin").click(function handleClockInClick() {
             let now = new Date();
             let clockinTime = now.getTime();
-            log("At clock in, time is " + time_formatter.format(now));
+            log("At clock in, time is " + TIME_FORMATTER.format(now));
 
             doOnClockActionCompletion(
                 () => { log("Setting value " + username + " to " + clockinTime); GM_setValue(getClockInKey(username), clockinTime); },
@@ -225,7 +224,10 @@
     function makeErrorPopup(verbiage) {
         let height = jQuery(window).height();
         let width = jQuery(window).width();
-        let popup = jQuery('<div id="jError" style="opacity: 1; z-index: 10000; min-width: 200px; top: ' + (Math.floor(height / 5) + 0) + 'px; left: ' + (Math.floor(width / 5) + 0) + 'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
+        let popup = jQuery('<div id="jError" style="opacity: 1; z-index: 10000; min-width: 200px; top: ' +
+                           (Math.floor(height / 5) + 0) + 'px; left: ' + (Math.floor(width / 5) + 0) +
+                           'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" ' +
+                           'href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
         return popup;
     }
 
@@ -255,11 +257,8 @@
         }
 
         jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
-            //event.preventDefault();
             let now = new Date();
-            if (DURATION_GUARD_DISABLED) {
-                log("duration feature disabled");
-            } else if (passwordIsEmpty()) {
+            if (passwordIsEmpty()) {
                 log("invalid password so defer to app.");
             } else if (!isLunchHour(now)) {
                 log("Not a lunch hour, so person gets a pass.");
@@ -273,7 +272,7 @@
                 } else {
                     // Clock-Out time is here for analysis
                     let clock_out_millis = stored_clockout;
-                    log("At clock in, time is " + now.getTime() + " or " + time_formatter.format(now));
+                    log(`At clock in, time is ${now.getTime()} or ${TIME_FORMATTER.format(now)}`);
                     let millis_away = now.getTime() - clock_out_millis;
                     let MY_40_MINUTES_MILLIS = 40 * 60 * 1000;
                     let MIN_BREAK_TIME_MILLIS = MY_40_MINUTES_MILLIS;
@@ -288,7 +287,7 @@
                         loadAndPlacePopup(too_early_popup_alert, 5250);
                     } else {
                         // Good break.
-                        log("Good break after " + millis_away + " millis or " + minutes_away + " minutes.");
+                        log(`Good break after ${millis_away} millis or ${minutes_away} minutes.`);
                     }
                 }
             }
@@ -303,7 +302,7 @@
         }
 
         jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
-            let now = new Date();
+            const now = new Date();
             if (isTooEarlyInMorning(now)) {
                 event.preventDefault();
                 log("Too early");
@@ -330,7 +329,7 @@
     */
     (function cleanCameraLeakForWindowsHello() {
 
-        let WARNING_DELAY_SECS = 90;
+        const WARNING_DELAY_SECS = 90;
         if (isLoginPage()) {
             setTimeout(() => {
                 let verbiage = "Closing the inactive Wizard page soon.  Please save your work now.";
