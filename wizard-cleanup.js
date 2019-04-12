@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.145
+// @version      0.146
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -158,9 +158,20 @@
     });
 
     (function tallySuccessfulClockActions() {
+
         function isUnexpectedTimeToClockOut() {
-            let now = new Date();
-            return (now.getHours() === 14 && now.getMinutes() > 15) || (now.getHours() === 15 && now.getMinutes() < 50);
+
+            function isEarlyAM(now) {
+                return now.getHours() < 11 || (now.getHours() === 11 && now.getMinutes() < 40);
+            }
+            function isAfterLunchHour(now) {
+                return (now.getHours() === 13 && now.getMinutes() > 32) || now.getHours() > 13;
+            }
+            function isTooEarlyToLeaveForTheDay(now) {
+                return now.getHours() < 16;
+            }
+            let time = new Date();
+            return isEarlyAM(time) || (isAfterLunchHour(time) && isTooEarlyToLeaveForTheDay(time));
         }
 
         let username = getUserNameInput().val();
