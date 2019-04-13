@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.146
+// @version      0.147
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -50,6 +50,9 @@
     function getPasswordField() { return jQuery("input#Password"); }
     function passwordIsEmpty() { return getPasswordField().val().trim().length === 0; }
 
+    const MILLIS_IN_SEC = 1000;
+    const SECS_IN_MINUTE = 60;
+
     function playAlert() {
         // https://stackoverflow.com/questions/50490304/how-to-make-audio-autoplay-on-chrome
         // blocks audio
@@ -63,7 +66,7 @@
         const INIT_DELAY_SECS = 35.0;
         function addSoundWithDelay(sound, delaySecs, prob) {
             if (!prob || Math.random() < prob) {
-                setTimeout(() => { jQuery("body").append(soundToFrame(sound)); }, delaySecs * 1000);
+                setTimeout(() => { jQuery("body").append(soundToFrame(sound)); }, delaySecs * MILLIS_IN_SEC);
             }
         }
         function vampSecurity() {
@@ -130,17 +133,19 @@
             clockInDate.setTime(clockInTime);
             let userClockedInToday = (clockInDate.getDate() === clockingOutDate.getDate());
             if (userClockedInToday) {
-                let BREAK_TRIGGER_HOURS = 5;
-                let BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * 60 * 60 * 1000;
-                let duration_clocked_in = clockingOutDate - clockInTime;
+                const BREAK_TRIGGER_HOURS = 5;
+                const MINS_IN_HOUR = 60;
+                const HOURS_ON_CLOCK = 12;
+                const BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * SECS_IN_MINUTE * MINS_IN_HOUR * MILLIS_IN_SEC;
+                const duration_clocked_in = clockingOutDate - clockInTime;
                 if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
                     let break_warn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
                     break_warn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
                     jQuery("div.modal-body").prepend(break_warn);
                     let clockinHour = clockInDate.getHours();
                     let clockinMinutes = clockInDate.getMinutes();
-                    let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % 12;
-                    jQuery("textarea#txtClockInNote").val("At " + breakTriggerHour + ":" + clockinMinutes + ", " + BREAK_TRIGGER_HOURS +
+                    let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % HOURS_ON_CLOCK;
+                    jQuery("textarea#txtClockInNote").val(`At ${breakTriggerHour}:${clockinMinutes}, ${BREAK_TRIGGER_HOURS}` +
                                                           " hours after clock-in, I started my default, 1.2 hour lunch break.");
                     clockoutButton.text("Clock Out for Today, " + username);
                 }
@@ -175,7 +180,7 @@
             return isEarlyAM(time) || (isAfterLunchHour(time) && isTooEarlyToLeaveForTheDay(time));
         }
 
-        let username = getUserNameInput().val();
+        const username = getUserNameInput().val(); // Needs to be read early.
 
         function doOnClockActionCompletion(success_fun, fail_fun) {
             setTimeout(() => {
@@ -198,7 +203,7 @@
                 playAlert();
             }
             doOnClockActionCompletion(
-                () => { log("Setting value " + username + " to " + clockoutTime); GM_setValue(getClockOutKey(username), clockoutTime); },
+                () => { log(`Setting value ${getClockOutKey(username)} to ${clockoutTime}`); GM_setValue(getClockOutKey(username), clockoutTime); },
                 () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
             );
         });
@@ -209,7 +214,7 @@
             log("At clock in, time is " + TIME_FORMATTER.format(now));
 
             doOnClockActionCompletion(
-                () => { log("Setting value " + username + " to " + clockinTime); GM_setValue(getClockInKey(username), clockinTime); },
+                () => { log(`Setting value ${getClockInKey(username)} to ${clockinTime}`); GM_setValue(getClockInKey(username), clockinTime); },
                 () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
             );
         });
@@ -225,18 +230,19 @@
         let height = jQuery(window).height();
         let width = jQuery(window).width();
         let popup = jQuery('<div id="jError" style="opacity: 1; z-index: 10000; min-width: 200px; top: ' +
-                           (Math.floor(height / 5) + 0) + 'px; left: ' + (Math.floor(width / 5) + 0) +
-                           'px; cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" ' +
-                           'href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>' + verbiage + '</div>');
+                           `${Math.floor(height / 5) + 0}px; left: ${Math.floor(width / 5) + 0}px;` +
+                           ' cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" ' +
+                           `href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>${verbiage}</div>`);
         return popup;
     }
 
     function loadAndPlacePopup(popup, fadeOutDelay) {
+
         function clearPasswordField() {
             getPasswordField().val('');
         }
-        let CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
-        let target = getLoginForm(); //jQuery("div#jOverlay");
+        const CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
+        let target = getLoginForm();
         log("Found target? " + target.length);
         if (target.length) {
             popup.hide().insertAfter(target).fadeIn();
@@ -251,6 +257,7 @@
     }
 
     (function guardForLunchBreakDuration() {
+
         function isLunchHour(now) {
             let hours = now.getHours();
             return (hours > 11 && hours < 16);
@@ -265,7 +272,7 @@
             } else {
                 let user = getUserNameInput().val();
                 let stored_clockout = GM_getValue(getClockOutKey(user));
-                log("Getting value " + user + ". Is " + stored_clockout);
+                log(`Getting value ${getClockOutKey(user)}. Is ${stored_clockout}`);
                 let no_clockout_stored_today_on_this_machine = isNaN(stored_clockout);
                 if (no_clockout_stored_today_on_this_machine) {
                     log("We don't know where they clocked out. Forgiving.");
@@ -274,20 +281,21 @@
                     let clock_out_millis = stored_clockout;
                     log(`At clock in, time is ${now.getTime()} or ${TIME_FORMATTER.format(now)}`);
                     let millis_away = now.getTime() - clock_out_millis;
-                    let MY_40_MINUTES_MILLIS = 40 * 60 * 1000;
-                    let MIN_BREAK_TIME_MILLIS = MY_40_MINUTES_MILLIS;
-                    let break_is_still_too_short = (millis_away < MIN_BREAK_TIME_MILLIS);
-                    let seconds_away = millis_away / 1000;
-                    let minutes_away = Math.floor(seconds_away / 60);
+                    const MIN_BREAK_TIME_MINUTES = 40;
+                    let seconds_away = millis_away / MILLIS_IN_SEC;
+                    const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE;
+                    let seconds_away_adj = seconds_away - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS;
+                    let minutes_away = Math.abs(Math.trunc(seconds_away_adj / SECS_IN_MINUTE));
+                    let break_is_still_too_short = (minutes_away < MIN_BREAK_TIME_MINUTES);
                     if (break_is_still_too_short) {
                         event.preventDefault();
                         log("Too short");
-                        let verbiage = "You are only " + minutes_away + " minutes into your lunch break. Please try again later. ";
+                        let verbiage = `You are only ${minutes_away} minutes into your lunch break. Please try again later. `;
                         let too_early_popup_alert = makeErrorPopup(verbiage);
                         loadAndPlacePopup(too_early_popup_alert, 5250);
                     } else {
                         // Good break.
-                        log(`Good break after ${millis_away} millis or ${minutes_away} minutes.`);
+                        log(`Good break after ${seconds_away_adj} secs or ${minutes_away} minutes.`);
                     }
                 }
             }
@@ -334,19 +342,19 @@
             setTimeout(() => {
                 let verbiage = "Closing the inactive Wizard page soon.  Please save your work now.";
                 let page_refresh_warning = makeErrorPopup(verbiage);
-                loadAndPlacePopup(page_refresh_warning, 10 * 1000);
-            }, WARNING_DELAY_SECS * 1000);
+                loadAndPlacePopup(page_refresh_warning, 10 * MILLIS_IN_SEC);
+            }, WARNING_DELAY_SECS * MILLIS_IN_SEC);
 
             // Close Timeclock tab after a while
             setTimeout(() => {
                 log("TCW: Ready to Close.");
                 window.close();
                 log("TCW: Closed.");
-            }, (WARNING_DELAY_SECS + 15) * 1000);
+            }, (WARNING_DELAY_SECS + 15) * MILLIS_IN_SEC);
             setTimeout(() => {
                 location.reload();
                 log("TCW: Reloaded as backup fix.");
-            }, (WARNING_DELAY_SECS + 25) * 1000);
+            }, (WARNING_DELAY_SECS + 25) * MILLIS_IN_SEC);
         }
     }()); // End of cleanCameraLeakForWindowsHello() and invoke
 
