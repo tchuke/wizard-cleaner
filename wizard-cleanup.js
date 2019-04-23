@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.147
+// @version      0.148
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -28,7 +28,6 @@
         let theDay = now.getDay();
         let theHour = now.getHours();
         const FRIDAY = 5;
-        log("looking to purge.");
         let isLateFriday = (theDay === FRIDAY && theHour > 16);
         if (isLateFriday) {
             log("Early Friday evening, so time to purge clock action values:");
@@ -37,6 +36,8 @@
                 log(key);
                 GM_deleteValue(key);
             }
+        } else {
+            log("looking to purge, but it is not the right time.");
         }
     }()); // End of clearClockActionTimesPeriodically() and invoke
 
@@ -66,6 +67,9 @@
         const INIT_DELAY_SECS = 35.0;
         function addSoundWithDelay(sound, delaySecs, prob) {
             if (!prob || Math.random() < prob) {
+                if (prob) {
+                    log("with special!");
+                }
                 setTimeout(() => { jQuery("body").append(soundToFrame(sound)); }, delaySecs * MILLIS_IN_SEC);
             }
         }
@@ -118,7 +122,7 @@
             let username = getUserNameInput().val();
             let clockInTime = GM_getValue(getClockInKey(username));
             if (isNaN(clockInTime)) {
-                log("no clock in time found for this user.");
+                log(`no clock in time found for this user '${username}'.`);
                 return;
             }
             let clockOutTime = GM_getValue(getClockOutKey(username));
@@ -162,64 +166,6 @@
         "second": "2-digit"
     });
 
-    (function tallySuccessfulClockActions() {
-
-        function isUnexpectedTimeToClockOut() {
-
-            function isEarlyAM(now) {
-                return now.getHours() < 11 || (now.getHours() === 11 && now.getMinutes() < 40);
-            }
-            function isAfterLunchHour(now) {
-                return (now.getHours() === 13 && now.getMinutes() > 32) || now.getHours() > 13;
-            }
-            function isTooEarlyToLeaveForTheDay(now) {
-                return now.getHours() < 16;
-            }
-
-            let time = new Date();
-            return isEarlyAM(time) || (isAfterLunchHour(time) && isTooEarlyToLeaveForTheDay(time));
-        }
-
-        const username = getUserNameInput().val(); // Needs to be read early.
-
-        function doOnClockActionCompletion(success_fun, fail_fun) {
-            setTimeout(() => {
-                let jSuccess_count_after = jQuery("div#jSuccess:visible").length;
-                log("success after: " + jSuccess_count_after);
-                if (jSuccess_count_after) {
-                    success_fun();
-                } else {
-                    fail_fun();
-                }
-            }, 2500);
-        }
-
-        jQuery("button#btnLocationClockout").click(function handleClockOutClick() {
-            let now = new Date();
-            let clockoutTime = now.getTime();
-            log("At clock out, time is " + TIME_FORMATTER.format(now));
-
-            if (isUnexpectedTimeToClockOut()) {
-                playAlert();
-            }
-            doOnClockActionCompletion(
-                () => { log(`Setting value ${getClockOutKey(username)} to ${clockoutTime}`); GM_setValue(getClockOutKey(username), clockoutTime); },
-                () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
-            );
-        });
-
-        jQuery("button#btnLocationClockin").click(function handleClockInClick() {
-            let now = new Date();
-            let clockinTime = now.getTime();
-            log("At clock in, time is " + TIME_FORMATTER.format(now));
-
-            doOnClockActionCompletion(
-                () => { log(`Setting value ${getClockInKey(username)} to ${clockinTime}`); GM_setValue(getClockInKey(username), clockinTime); },
-                () => { log("After hitting clock out, no success message on the page, so presuming failed clockout."); }
-            );
-        });
-    }()); // End of tallySuccessfulClockActions() and invoke
-
     // HELPER FUNCTIONS invoked in multiple places:
     function getLoginForm() { return jQuery("form[action='/Login']"); }
     function isLoginPage() {
@@ -243,17 +189,17 @@
         }
         const CLOSE_WINDOW_SELECTOR = "a.clockbuttoncss";
         let target = getLoginForm();
-        log("Found target? " + target.length);
+        log("Found target for popup? " + target.length);
         if (target.length) {
             popup.hide().insertAfter(target).fadeIn();
+            popup.find(CLOSE_WINDOW_SELECTOR).click(event => {
+                let the_popup = jQuery(event.delegateTarget).parent();
+                the_popup.fadeOut();
+            });
+            setTimeout(() => clearPasswordField(), fadeOutDelay - 1500);
+            setTimeout(() => popup.fadeOut(), fadeOutDelay);
+            setTimeout(() => popup.remove(), fadeOutDelay + 2750);
         }
-        popup.find(CLOSE_WINDOW_SELECTOR).click(event => {
-            let the_popup = jQuery(event.delegateTarget).parent();
-            the_popup.fadeOut();
-        });
-        setTimeout(() => clearPasswordField(), fadeOutDelay - 1500);
-        setTimeout(() => popup.fadeOut(), fadeOutDelay);
-        setTimeout(() => popup.remove(), fadeOutDelay + 2750);
     }
 
     (function guardForLunchBreakDuration() {
@@ -278,9 +224,8 @@
                     log("We don't know where they clocked out. Forgiving.");
                 } else {
                     // Clock-Out time is here for analysis
-                    let clock_out_millis = stored_clockout;
                     log(`At clock in, time is ${now.getTime()} or ${TIME_FORMATTER.format(now)}`);
-                    let millis_away = now.getTime() - clock_out_millis;
+                    let millis_away = now.getTime() - stored_clockout;
                     const MIN_BREAK_TIME_MINUTES = 40;
                     let seconds_away = millis_away / MILLIS_IN_SEC;
                     const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE;
@@ -335,27 +280,158 @@
     /*
     Camera-on in tab prevents Windows Hello from using camera.
     */
-    (function cleanCameraLeakForWindowsHello() {
+    function cleanCameraLeakForWindowsHello() {
 
-        const WARNING_DELAY_SECS = 90;
-        if (isLoginPage()) {
+        const WARNING_DELAY_SECS = 60;
+
+        function getCurrentTimer() {
+            return cleanCameraLeakForWindowsHello.currentTimer;
+        }
+        function setCurrentTimer(timer) {
+            log("setting a new timer, " + timer);
+            cleanCameraLeakForWindowsHello.currentTimer = timer;
+        }
+        function clearOngoingTimer() {
+            let currentTimer = getCurrentTimer();
+            if (currentTimer) {
+                log("clearing existing timer, " + currentTimer);
+                clearTimeout(currentTimer);
+            }
+        }
+        function areTimersTheSame(thisTimer) {
+            log("my timer: " + thisTimer);
+            log("current timer: " + getCurrentTimer());
+            return (thisTimer === getCurrentTimer());
+        }
+        function doDelayedReload(theTimer) {
             setTimeout(() => {
+                if (areTimersTheSame(theTimer)) {
+                    log("TCW: Ready to Reload.");
+                    location.reload();
+                    log("TCW: Reloaded.");
+                } else {
+                    log("aborting reload as have been refreshed.");
+                }
+            }, 10 * MILLIS_IN_SEC);
+        }
+        function doDelayedClose(aTimer) {
+            setTimeout(() => {
+                if (areTimersTheSame(aTimer)) {
+                    log("TCW: Ready to Close.");
+                    window.close();
+                    log("TCW: Closed.");
+                    doDelayedReload(aTimer);
+                } else {
+                    log("aborting close as have been refreshed.");
+                }
+            }, 15 * MILLIS_IN_SEC);
+        }
+
+        clearOngoingTimer();
+
+        if (isLoginPage()) {
+            let thisTimer = setTimeout(function closingTheWizard() {
                 let verbiage = "Closing the inactive Wizard page soon.  Please save your work now.";
                 let page_refresh_warning = makeErrorPopup(verbiage);
                 loadAndPlacePopup(page_refresh_warning, 10 * MILLIS_IN_SEC);
+                doDelayedClose(thisTimer);
             }, WARNING_DELAY_SECS * MILLIS_IN_SEC);
-
-            // Close Timeclock tab after a while
-            setTimeout(() => {
-                log("TCW: Ready to Close.");
-                window.close();
-                log("TCW: Closed.");
-            }, (WARNING_DELAY_SECS + 15) * MILLIS_IN_SEC);
-            setTimeout(() => {
-                location.reload();
-                log("TCW: Reloaded as backup fix.");
-            }, (WARNING_DELAY_SECS + 25) * MILLIS_IN_SEC);
+            setCurrentTimer(thisTimer);
         }
-    }()); // End of cleanCameraLeakForWindowsHello() and invoke
+    }
+    cleanCameraLeakForWindowsHello(); // End of cleanCameraLeakForWindowsHello() and invoke
+
+    (function refreshTimeoutOnMouseActivity() {
+        jQuery("div.panel").click(cleanCameraLeakForWindowsHello);
+    }());
+
+    (function tallySuccessfulClockActions() {
+
+        function isUnexpectedTimeToClockOut() {
+
+            function isEarlyAM(now) {
+                return now.getHours() < 11 || (now.getHours() === 11 && now.getMinutes() < 40);
+            }
+            function isAfterLunchHour(now) {
+                return (now.getHours() === 13 && now.getMinutes() > 32) || now.getHours() > 13;
+            }
+            function isTooEarlyToLeaveForTheDay(now) {
+                return now.getHours() < 16;
+            }
+
+            let time = new Date();
+            return isEarlyAM(time) || (isAfterLunchHour(time) && isTooEarlyToLeaveForTheDay(time));
+        }
+
+        const username = getUserNameInput().val(); // Needs to be read early.
+
+        function doOnClockActionCompletion(successFun, failFun) {
+            function onClockHelper(success_fun, fail_fun, triesLeft) {
+                setTimeout(function lookForResponseOverlay() {
+                    let jSuccess_count_after = jQuery("div#jSuccess:visible").length;
+                    let jError_count_after = jQuery("div#jError:visible").length;
+
+                    log(`${triesLeft} tries left: ` +
+                    `success count (${jSuccess_count_after}), ` +
+                    `failure count (${jError_count_after})`);
+
+                    if (jSuccess_count_after) {
+                        success_fun(triesLeft);
+                    } else if (jError_count_after) {
+                        fail_fun(triesLeft);
+                    } else if (triesLeft) {
+                        onClockHelper(success_fun, fail_fun, triesLeft - 1);
+                    } else {
+                        fail_fun(triesLeft);
+                    }
+                }, 1000);
+            }
+            cleanCameraLeakForWindowsHello();
+            onClockHelper(successFun, failFun, 5);
+        }
+
+        jQuery("button#btnLocationClockout").click(function handleClockOutClick() {
+            let now = new Date();
+            let clockoutTime = now.getTime();
+            log("At clock out, time is " + TIME_FORMATTER.format(now));
+
+            if (isUnexpectedTimeToClockOut()) {
+                playAlert();
+            }
+            doOnClockActionCompletion(
+                function clockOutSuccess() {
+                    log(`Setting value ${getClockOutKey(username)} to ${clockoutTime}`);
+                    GM_setValue(getClockOutKey(username), clockoutTime);
+                },
+                function clockOutFailure(triesLeft) {
+                    if (triesLeft) {
+                        log("After hitting clock out, error message on the page, so failed clock-out.");
+                    } else {
+                        log("After hitting clock out, giving up waiting for success message.  Presuming failed clock-out.");
+                    }
+                }
+            );
+        });
+
+        jQuery("button#btnLocationClockin").click(function handleClockInClick() {
+            let now = new Date();
+            let clockinTime = now.getTime();
+            log("At clock in, time is " + TIME_FORMATTER.format(now));
+
+            doOnClockActionCompletion(
+                function clockInSuccess() {
+                    log(`Setting value ${getClockInKey(username)} to ${clockinTime}`);
+                    GM_setValue(getClockInKey(username), clockinTime);
+                },
+                function clockInFailure(triesLeft) {
+                    if (triesLeft) {
+                        log("After hitting clock in, error message on the page, so failed clock-in.");
+                    } else {
+                        log("After hitting clock in, giving up waiting for success message.  Presuming failed clock-in.");
+                    }
+                }
+            );
+        });
+    }()); // End of tallySuccessfulClockActions() and invoke
 
 }()); // End of original jQuery ready
