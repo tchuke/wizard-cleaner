@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.148
+// @version      0.149
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -265,17 +265,6 @@
             }
         });
     }()); // End of guardForEarlyClockIn() and invoke
-
-    (function setLocationToSoleValue() {
-        let clock_in_select = jQuery("select#ddlLocation");
-        if (clock_in_select.length) {
-            let options_with_value = clock_in_select.find("option[value]");
-            if (options_with_value.length) {
-                let last_option_value = options_with_value.last().attr("value");
-                clock_in_select.val(last_option_value);
-            }
-        }
-    }());
 
     /*
     Camera-on in tab prevents Windows Hello from using camera.
