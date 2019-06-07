@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.149
+// @version      0.150
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -10,12 +10,13 @@
 // @grant        GM_getValue
 // @grant        GM_deleteValue
 // @grant        GM_listValues
+// @grant        GM_openInTab
 // @require      https://code.jquery.com/jquery-3.3.1.js
 // @updateURL    https://www.hidalgocare.com/uploads/7/9/7/8/79788936/wizard-cleanup.js
 // @downloadURL  https://www.hidalgocare.com/uploads/7/9/7/8/79788936/wizard-cleanup.js
 // ==/UserScript==
 
-/* globals jQuery GM_setValue GM_getValue GM_deleteValue GM_listValues */
+/* globals jQuery GM_setValue GM_getValue GM_deleteValue GM_listValues GM_openInTab */
 
 (function() {
 
@@ -61,16 +62,29 @@
         const alarm = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/outdoor-alarm-sound-looping_zkLnXr4O.mp3";
         const security = "https://d1490khl9dq1ow.cloudfront.net/sfx/mp3preview/hospital-pa-system-speaker-voice-clip-male-security-to-the-er_z1keyDNd.mp3";
 
-        function soundToFrame(sound) { return '<iframe src="' + sound + '" type="audio/mpeg" allow="autoplay" style="display:none"></iframe>'; }
+        function soundToAudio(sound) {
+            return `<audio id="player" autoplay><source src="${sound}" type="audio/mp3"></audio>`;
+        }
+
         function getRandomInt(max) { return Math.floor(Math.random() * Math.floor(max)); }
 
         const INIT_DELAY_SECS = 35.0;
+
+        if (Math.random() < 1 / 6) {
+            const policeTheme = "https://www.youtube.com/watch?v=Jm_t3g4RhpY";
+            setTimeout(() => GM_openInTab(policeTheme, false), INIT_DELAY_SECS * MILLIS_IN_SEC);
+            return;
+        }
+
         function addSoundWithDelay(sound, delaySecs, prob) {
             if (!prob || Math.random() < prob) {
                 if (prob) {
                     log("with special!");
                 }
-                setTimeout(() => { jQuery("body").append(soundToFrame(sound)); }, delaySecs * MILLIS_IN_SEC);
+                setTimeout(() => {
+                    log(`playing sound '${sound}' NOW`);
+                    jQuery("body").append(soundToAudio(sound));
+                }, delaySecs * MILLIS_IN_SEC);
             }
         }
         function vampSecurity() {
