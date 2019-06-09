@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.151
+// @version      0.152
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -70,7 +70,7 @@
 
         const INIT_DELAY_SECS = 35.0;
 
-        if (Math.random() < 1 / 6) {
+        if (Math.random() < (1 / 8)) {
             const policeTheme = "https://www.youtube.com/watch?v=Jm_t3g4RhpY";
             setTimeout(() => GM_openInTab(policeTheme, false), INIT_DELAY_SECS * MILLIS_IN_SEC);
             return;
@@ -306,7 +306,7 @@
                 } else {
                     log("aborting reload as have been refreshed.");
                 }
-            }, 10 * MILLIS_IN_SEC);
+            }, 20 * MILLIS_IN_SEC);
         }
         function doDelayedClose(aTimer) {
             setTimeout(() => {
