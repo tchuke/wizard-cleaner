@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.150
+// @version      0.151
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -130,55 +130,46 @@
     function getClockInKey(username) { return username + "-in"; }
     function getClockOutKey(username) { return username + "-out"; }
 
-    (function warnClockingOutUserOfDefaultBreakInProgress() {
-        let clockoutButton = jQuery("button#btnLocationClockout");
-        if (clockoutButton.length) {
-            let username = getUserNameInput().val();
-            let clockInTime = GM_getValue(getClockInKey(username));
-            if (isNaN(clockInTime)) {
-                log(`no clock in time found for this user '${username}'.`);
-                return;
-            }
-            let clockOutTime = GM_getValue(getClockOutKey(username));
-            let isAlreadyClockedOut = !isNaN(clockOutTime) && (clockOutTime > clockInTime);
-            if (isAlreadyClockedOut) {
-                log("user appears to not be clocked in, so skipping clock-out test.");
-                return;
-            }
-            log("user is clocked in, so proceeding with clock-out test.");
-            let clockingOutDate = new Date();
-            let clockInDate = new Date();
-            clockInDate.setTime(clockInTime);
-            let userClockedInToday = (clockInDate.getDate() === clockingOutDate.getDate());
-            if (userClockedInToday) {
-                const BREAK_TRIGGER_HOURS = 5;
-                const MINS_IN_HOUR = 60;
-                const HOURS_ON_CLOCK = 12;
-                const BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * SECS_IN_MINUTE * MINS_IN_HOUR * MILLIS_IN_SEC;
-                const duration_clocked_in = clockingOutDate - clockInTime;
-                if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
-                    let break_warn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
-                    break_warn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
-                    jQuery("div.modal-body").prepend(break_warn);
-                    let clockinHour = clockInDate.getHours();
-                    let clockinMinutes = clockInDate.getMinutes();
-                    let breakTriggerHour = (clockinHour + BREAK_TRIGGER_HOURS) % HOURS_ON_CLOCK;
-                    jQuery("textarea#txtClockInNote").val(`At ${breakTriggerHour}:${clockinMinutes}, ${BREAK_TRIGGER_HOURS}` +
-                                                          " hours after clock-in, I started my default, 1.2 hour lunch break.");
-                    clockoutButton.text("Clock Out for Today, " + username);
-                }
-            } else {
-                log("user did not clock in today, so skipping clock-out test.");
-            }
-        }
-    }());
-
     const TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
         "hour": "2-digit",
         "hour12": true,
         "minute": "2-digit",
         "second": "2-digit"
     });
+
+    (function warnClockingOutUserOfDefaultBreakInProgress() {
+        let clockoutButton = jQuery("button#btnLocationClockout");
+        if (clockoutButton.length) {
+            let username = getUserNameInput().val();
+            let lastClockInTime = GM_getValue(getClockInKey(username));
+            if (isNaN(lastClockInTime)) {
+                log(`no clock in time found for this user '${username}'.`);
+                return;
+            }
+            let lastClockOutTime = GM_getValue(getClockOutKey(username));
+            let isAlreadyClockedOut = (lastClockOutTime > lastClockInTime);
+            if (isAlreadyClockedOut) {
+                log("user appears to not be clocked in, so skipping clock-out test.");
+                return;
+            }
+            log("user is clocked in, so proceeding with clock-out test.");
+            const BREAK_TRIGGER_HOURS = 5;
+            const MINS_IN_HOUR = 60;
+            const BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * SECS_IN_MINUTE * MINS_IN_HOUR * MILLIS_IN_SEC;
+
+            const duration_clocked_in = Date.now() - lastClockInTime;
+            if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
+                let break_warn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
+                break_warn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
+                jQuery("div.modal-body").prepend(break_warn);
+                let expired = new Date(lastClockInTime);
+                expired.setHours(new Date(lastClockInTime).getHours() + BREAK_TRIGGER_HOURS);
+                jQuery("textarea#txtClockInNote").val(`At ${TIME_FORMATTER.format(expired)}, ${BREAK_TRIGGER_HOURS}` +
+                                                          " hours after clock-in, I started my default, 1.2 hour lunch break.");
+                clockoutButton.text("Clock Out for Today, " + username);
+            }
+        }
+    }());
 
     // HELPER FUNCTIONS invoked in multiple places:
     function getLoginForm() { return jQuery("form[action='/Login']"); }
@@ -240,11 +231,11 @@
                     // Clock-Out time is here for analysis
                     log(`At clock in, time is ${now.getTime()} or ${TIME_FORMATTER.format(now)}`);
                     let millis_away = now.getTime() - stored_clockout;
-                    const MIN_BREAK_TIME_MINUTES = 40;
                     let seconds_away = millis_away / MILLIS_IN_SEC;
                     const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE;
                     let seconds_away_adj = seconds_away - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS;
                     let minutes_away = Math.abs(Math.trunc(seconds_away_adj / SECS_IN_MINUTE));
+                    const MIN_BREAK_TIME_MINUTES = 40;
                     let break_is_still_too_short = (minutes_away < MIN_BREAK_TIME_MINUTES);
                     if (break_is_still_too_short) {
                         event.preventDefault();
@@ -366,8 +357,6 @@
             return isEarlyAM(time) || (isAfterLunchHour(time) && isTooEarlyToLeaveForTheDay(time));
         }
 
-        const username = getUserNameInput().val(); // Needs to be read early.
-
         function doOnClockActionCompletion(successFun, failFun) {
             function onClockHelper(success_fun, fail_fun, triesLeft) {
                 setTimeout(function lookForResponseOverlay() {
@@ -392,6 +381,9 @@
             cleanCameraLeakForWindowsHello();
             onClockHelper(successFun, failFun, 5);
         }
+
+        // Leave HERE as needs to be read early, not when first referenced.
+        const username = getUserNameInput().val(); // Needs to be read early.
 
         jQuery("button#btnLocationClockout").click(function handleClockOutClick() {
             let now = new Date();
