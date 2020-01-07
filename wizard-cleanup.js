@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.151
+// @version      0.152
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -23,6 +23,46 @@
     /* eslint-disable */
     function log(...msg) {  console.log(...msg);  }
     /* eslint-enable */
+
+    (function cleanTimeOffRequest() {
+
+        function handleNoteEdits() {
+
+            jQuery(".modal-title").text("ADD ABSENCE REQUEST");
+
+            jQuery("input#txtStartTime").val("09:00 AM");
+            jQuery("input#txtEndTime").val("05:00 PM");
+
+            const usePtoRadioButtons = jQuery("div#addtimeOff");
+            usePtoRadioButtons.hide();
+
+            const absenceNote = jQuery("textArea#txtaAbsenceNote");
+            absenceNote.prop("placeholder", "Explain what you are taking time off for ...");
+
+            const addAbsenceButton = jQuery("button#btnabsencepopupSave");
+            addAbsenceButton.text("REQUEST TIME OFF");
+            addAbsenceButton.prop('disabled', true);
+
+            function noteHasEnoughContent() {
+                return absenceNote.val().trim().length > 6;
+            }
+
+            absenceNote.on("change mouseleave", () => {
+                if (noteHasEnoughContent()) {
+                    //log("On CHANGE, form is error-free.");
+                    addAbsenceButton.removeAttr("disabled");
+                } else {
+                    //log("On CHANGE, form has error.");
+                    addAbsenceButton.prop('disabled', true);
+                }
+            });
+        } // End of handleNoteEdits()
+
+        const addTimeOffButton = jQuery("a#add_task_link");
+        const waitForRenderMillis = 1000;
+        addTimeOffButton.click(() => setTimeout(handleNoteEdits, waitForRenderMillis));
+
+    }()); // End of cleanTimeOffRequest() and invoke
 
     (function clearClockActionTimesPeriodically() {
         let now = new Date();
