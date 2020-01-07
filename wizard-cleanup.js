@@ -110,7 +110,7 @@
 
         const INIT_DELAY_SECS = 35.0;
 
-        if (Math.random() < 1 / 6) {
+        if (Math.random() < (1 / 8)) {
             const policeTheme = "https://www.youtube.com/watch?v=Jm_t3g4RhpY";
             setTimeout(() => GM_openInTab(policeTheme, false), INIT_DELAY_SECS * MILLIS_IN_SEC);
             return;
@@ -346,7 +346,7 @@
                 } else {
                     log("aborting reload as have been refreshed.");
                 }
-            }, 10 * MILLIS_IN_SEC);
+            }, 20 * MILLIS_IN_SEC);
         }
         function doDelayedClose(aTimer) {
             setTimeout(() => {
