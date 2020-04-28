@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.152
+// @version      0.153
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -18,10 +18,10 @@
 
 /* globals jQuery GM_setValue GM_getValue GM_deleteValue GM_listValues GM_openInTab */
 
-(function() {
+(function () {
 
     /* eslint-disable */
-    function log(...msg) {  console.log(...msg);  }
+    function log(...msg) { console.log(...msg); }
     /* eslint-enable */
 
     (function cleanTimeOffRequest() {
@@ -205,7 +205,7 @@
                 let expired = new Date(lastClockInTime);
                 expired.setHours(new Date(lastClockInTime).getHours() + BREAK_TRIGGER_HOURS);
                 jQuery("textarea#txtClockInNote").val(`At ${TIME_FORMATTER.format(expired)}, ${BREAK_TRIGGER_HOURS}` +
-                                                          " hours after clock-in, I started my default, 1.2 hour lunch break.");
+                    " hours after clock-in, I started my default, 1.2 hour lunch break.");
                 clockoutButton.text("Clock Out for Today, " + username);
             }
         }
@@ -221,9 +221,9 @@
         let height = jQuery(window).height();
         let width = jQuery(window).width();
         let popup = jQuery('<div id="jError" style="opacity: 1; z-index: 10000; min-width: 200px; top: ' +
-                           `${Math.floor(height / 5) + 0}px; left: ${Math.floor(width / 5) + 0}px;` +
-                           ' cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" ' +
-                           `href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>${verbiage}</div>`);
+            `${Math.floor(height / 5) + 0}px; left: ${Math.floor(width / 5) + 0}px;` +
+            ' cursor: pointer;"><a style="float: right; margin-top:-17px;margin-right:-14px;" ' +
+            `href="#" class="clockbuttoncss"><img src="/img/cancel.png"></a>${verbiage}</div>`);
         return popup;
     }
 
@@ -273,14 +273,16 @@
                     let millis_away = now.getTime() - stored_clockout;
                     let seconds_away = millis_away / MILLIS_IN_SEC;
                     const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE;
-                    let seconds_away_adj = seconds_away - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS;
+                    let secs_fudge_user = user.includes("tes") ? 6 * SECS_IN_MINUTE : 0;
+                    let seconds_away_adj = seconds_away - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS - secs_fudge_user;
                     let minutes_away = Math.abs(Math.trunc(seconds_away_adj / SECS_IN_MINUTE));
-                    const MIN_BREAK_TIME_MINUTES = 40;
-                    let break_is_still_too_short = (minutes_away < MIN_BREAK_TIME_MINUTES);
+                    const MIN_BREAK_TIME_MINUTES = 46;
+                    let minutes_of_break_left = MIN_BREAK_TIME_MINUTES - minutes_away;
+                    let break_is_still_too_short = minutes_of_break_left > 0;
                     if (break_is_still_too_short) {
                         event.preventDefault();
                         log("Too short");
-                        let verbiage = `You are only ${minutes_away} minutes into your lunch break. Please try again later. `;
+                        let verbiage = `You have ${minutes_of_break_left} minutes left on your lunch break. Please try again later. `;
                         let too_early_popup_alert = makeErrorPopup(verbiage);
                         loadAndPlacePopup(too_early_popup_alert, 5250);
                     } else {
@@ -404,8 +406,8 @@
                     let jError_count_after = jQuery("div#jError:visible").length;
 
                     log(`${triesLeft} tries left: ` +
-                    `success count (${jSuccess_count_after}), ` +
-                    `failure count (${jError_count_after})`);
+                        `success count (${jSuccess_count_after}), ` +
+                        `failure count (${jError_count_after})`);
 
                     if (jSuccess_count_after) {
                         success_fun(triesLeft);
