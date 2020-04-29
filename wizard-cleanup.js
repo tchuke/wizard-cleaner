@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.153
+// @version      0.154
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -275,7 +275,7 @@
                     const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE;
                     let secs_fudge_user = user.includes("tes") ? 6 * SECS_IN_MINUTE : 0;
                     let seconds_away_adj = seconds_away - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS - secs_fudge_user;
-                    let minutes_away = Math.abs(Math.trunc(seconds_away_adj / SECS_IN_MINUTE));
+                    let minutes_away = Math.trunc(seconds_away_adj / SECS_IN_MINUTE);
                     const MIN_BREAK_TIME_MINUTES = 46;
                     let minutes_of_break_left = MIN_BREAK_TIME_MINUTES - minutes_away;
                     let break_is_still_too_short = minutes_of_break_left > 0;
