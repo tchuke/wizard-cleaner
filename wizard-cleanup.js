@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.154
+// @version      0.155
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -84,8 +84,8 @@
 
     // We need to hide logged-in clock buttons as we are not guarding them right now.
     (function hideDashboardClockButtons() {
-        let dash_clock_buttons = jQuery("div#dasboard-btn").find("a#clock_out_link, a#clock_in_link");
-        dash_clock_buttons.hide();
+        let dashClockButtons = jQuery("div#dasboard-btn").find("a#clock_out_link, a#clock_in_link");
+        dashClockButtons.hide();
     }());
 
     function getUserNameInput() { return jQuery("input#UserName"); }
@@ -150,8 +150,8 @@
         }
         function exitSecurity() {
             // 12 sec
-            let exit_music = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/exit-stage-right-cut-to-commercial-tv-theme_z1QvMgSO.mp3";
-            addSoundWithDelay(exit_music, INIT_DELAY_SECS);
+            let exitMusic = "https://d1490khl9dq1ow.cloudfront.net/music/mp3preview/exit-stage-right-cut-to-commercial-tv-theme_z1QvMgSO.mp3";
+            addSoundWithDelay(exitMusic, INIT_DELAY_SECS);
             addSoundWithDelay(security, INIT_DELAY_SECS + 12);
             addSoundWithDelay(alarm, INIT_DELAY_SECS + 6.0, 1 / 2);
         }
@@ -197,11 +197,11 @@
             const MINS_IN_HOUR = 60;
             const BREAK_TRIGGER_HOURS_MILLIS = BREAK_TRIGGER_HOURS * SECS_IN_MINUTE * MINS_IN_HOUR * MILLIS_IN_SEC;
 
-            const duration_clocked_in = Date.now() - lastClockInTime;
-            if (duration_clocked_in > BREAK_TRIGGER_HOURS_MILLIS) {
-                let break_warn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
-                break_warn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
-                jQuery("div.modal-body").prepend(break_warn);
+            const durationClockedIn = Date.now() - lastClockInTime;
+            if (durationClockedIn > BREAK_TRIGGER_HOURS_MILLIS) {
+                let breakWarn = jQuery('<h4 class="hidalgo_breakwarn">Default Lunch Break in Progress</h4>');
+                breakWarn.css("color", "red").css("margin-top", "-10px").css("margin-bottom", "24px");
+                jQuery("div.modal-body").prepend(breakWarn);
                 let expired = new Date(lastClockInTime);
                 expired.setHours(new Date(lastClockInTime).getHours() + BREAK_TRIGGER_HOURS);
                 jQuery("textarea#txtClockInNote").val(`At ${TIME_FORMATTER.format(expired)}, ${BREAK_TRIGGER_HOURS}` +
@@ -238,8 +238,8 @@
         if (target.length) {
             popup.hide().insertAfter(target).fadeIn();
             popup.find(CLOSE_WINDOW_SELECTOR).click(event => {
-                let the_popup = jQuery(event.delegateTarget).parent();
-                the_popup.fadeOut();
+                let thePopup = jQuery(event.delegateTarget).parent();
+                thePopup.fadeOut();
             });
             setTimeout(() => clearPasswordField(), fadeOutDelay - 1500);
             setTimeout(() => popup.fadeOut(), fadeOutDelay);
@@ -314,8 +314,8 @@
                 event.preventDefault();
                 log("Too early");
                 let verbiage = "The morning shift has not yet begun.  Please arrive at shift start time for clock-in.";
-                let too_early_popup_alert = makeErrorPopup(verbiage);
-                loadAndPlacePopup(too_early_popup_alert, 5250);
+                let tooEarlyPopupAlert = makeErrorPopup(verbiage);
+                loadAndPlacePopup(tooEarlyPopupAlert, 5250);
             }
         });
     }()); // End of guardForEarlyClockIn() and invoke
@@ -375,8 +375,8 @@
         if (isLoginPage()) {
             let thisTimer = setTimeout(function closingTheWizard() {
                 let verbiage = "Closing the inactive Wizard page soon.  Please save your work now.";
-                let page_refresh_warning = makeErrorPopup(verbiage);
-                loadAndPlacePopup(page_refresh_warning, 10 * MILLIS_IN_SEC);
+                let pageRefreshWarning = makeErrorPopup(verbiage);
+                loadAndPlacePopup(pageRefreshWarning, 10 * MILLIS_IN_SEC);
                 doDelayedClose(thisTimer);
             }, WARNING_DELAY_SECS * MILLIS_IN_SEC);
             setCurrentTimer(thisTimer);
@@ -407,23 +407,23 @@
         }
 
         function doOnClockActionCompletion(successFun, failFun) {
-            function onClockHelper(success_fun, fail_fun, triesLeft) {
+            function onClockHelper(mySuccessFun, myFailFun, triesLeft) {
                 setTimeout(function lookForResponseOverlay() {
-                    let jSuccess_count_after = jQuery("div#jSuccess:visible").length;
-                    let jError_count_after = jQuery("div#jError:visible").length;
+                    let jSuccessCountAfter = jQuery("div#jSuccess:visible").length;
+                    let jErrorCountAfter = jQuery("div#jError:visible").length;
 
                     log(`${triesLeft} tries left: ` +
-                        `success count (${jSuccess_count_after}), ` +
-                        `failure count (${jError_count_after})`);
+                        `success count (${jSuccessCountAfter}), ` +
+                        `failure count (${jErrorCountAfter})`);
 
-                    if (jSuccess_count_after) {
-                        success_fun(triesLeft);
-                    } else if (jError_count_after) {
-                        fail_fun(triesLeft);
+                    if (jSuccessCountAfter) {
+                        mySuccessFun(triesLeft);
+                    } else if (jErrorCountAfter) {
+                        myFailFun(triesLeft);
                     } else if (triesLeft) {
-                        onClockHelper(success_fun, fail_fun, triesLeft - 1);
+                        onClockHelper(mySuccessFun, myFailFun, triesLeft - 1);
                     } else {
-                        fail_fun(triesLeft);
+                        myFailFun(triesLeft);
                     }
                 }, 1000);
             }
