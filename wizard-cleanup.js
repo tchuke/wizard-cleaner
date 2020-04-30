@@ -262,32 +262,39 @@
                 log("Not a lunch hour, so person gets a pass.");
             } else {
                 let user = getUserNameInput().val();
-                let stored_clockout = GM_getValue(getClockOutKey(user));
-                log(`Getting value ${getClockOutKey(user)}. Is ${stored_clockout}`);
-                let no_clockout_stored_today_on_this_machine = isNaN(stored_clockout);
-                if (no_clockout_stored_today_on_this_machine) {
+                let storedClockout = GM_getValue(getClockOutKey(user));
+                log(`Getting value ${getClockOutKey(user)}. Is ${storedClockout}`);
+
+                let noClockoutStoredTodayOnThisMachine = isNaN(storedClockout);
+                if (noClockoutStoredTodayOnThisMachine) {
                     log("We don't know where they clocked out. Forgiving.");
                 } else {
                     // Clock-Out time is here for analysis
                     log(`At clock in, time is ${now.getTime()} or ${TIME_FORMATTER.format(now)}`);
-                    let millis_away = now.getTime() - stored_clockout;
-                    let seconds_away = millis_away / MILLIS_IN_SEC;
+                    let millisAway = now.getTime() - storedClockout;
+                    let secsAway = millisAway / MILLIS_IN_SEC;
+
                     const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE;
-                    let secs_fudge_user = user.includes("tes") ? 6 * SECS_IN_MINUTE : 0;
-                    let seconds_away_adj = seconds_away - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS - secs_fudge_user;
-                    let minutes_away = Math.trunc(seconds_away_adj / SECS_IN_MINUTE);
+                    let secsFudgeUser = user.includes("blah") ? 6 * SECS_IN_MINUTE : 0;
+
+                    let secsAwayAdj = secsAway - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS - secsFudgeUser;
+                    let minsAwayAdj = secsAwayAdj / SECS_IN_MINUTE;
+
                     const MIN_BREAK_TIME_MINUTES = 46;
-                    let minutes_of_break_left = MIN_BREAK_TIME_MINUTES - minutes_away;
-                    let break_is_still_too_short = minutes_of_break_left > 0;
-                    if (break_is_still_too_short) {
+                    let minsOfBreakLeft = MIN_BREAK_TIME_MINUTES - minsAwayAdj;
+                    let breakIsTooShort = minsOfBreakLeft > 0;
+                    if (breakIsTooShort) {
                         event.preventDefault();
                         log("Too short");
-                        let verbiage = `You have ${minutes_of_break_left} minutes left on your lunch break. Please try again later. `;
-                        let too_early_popup_alert = makeErrorPopup(verbiage);
-                        loadAndPlacePopup(too_early_popup_alert, 5250);
+                        let wholeMinsLeft = Math.ceil(minsOfBreakLeft);
+                        let minsSlug = wholeMinsLeft > 1 ? `${wholeMinsLeft} minutes` : "1 minute";
+                        let verbiage = `You have ${minsSlug} left on your lunch break. Please try again later. `;
+                        let tooEarlyPopupAlert = makeErrorPopup(verbiage);
+                        log(`Too soon after ${secsAwayAdj} secs or ${minsAwayAdj} minutes.`);
+                        loadAndPlacePopup(tooEarlyPopupAlert, 5300);
                     } else {
                         // Good break.
-                        log(`Good break after ${seconds_away_adj} secs or ${minutes_away} minutes.`);
+                        log(`Good break after ${secsAwayAdj} secs or ${minsAwayAdj} minutes.`);
                     }
                 }
             }
