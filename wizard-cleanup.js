@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.155
+// @version      0.156
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -37,18 +37,24 @@
             usePtoRadioButtons.hide();
 
             const absenceNote = jQuery("textArea#txtaAbsenceNote");
-            absenceNote.prop("placeholder", "Explain what you are taking time off for ...");
+            absenceNote.prop("placeholder", "Explain to Doctor specifically what you are taking time off for ...");
 
             const addAbsenceButton = jQuery("button#btnabsencepopupSave");
             addAbsenceButton.text("REQUEST TIME OFF");
             addAbsenceButton.prop('disabled', true);
 
             function noteHasEnoughContent() {
-                return absenceNote.val().trim().length > 6;
+                return absenceNote.val().trim().length > 8;
+            }
+
+            function noteHasNoGenericWords() {
+                let note = absenceNote.val().toLowerCase();
+                let hasGenericWords = note.includes("personal") || note.includes("time off") || note.includes("commit");
+                return !hasGenericWords;
             }
 
             absenceNote.on("change mouseleave", () => {
-                if (noteHasEnoughContent()) {
+                if (noteHasEnoughContent() && noteHasNoGenericWords()) {
                     //log("On CHANGE, form is error-free.");
                     addAbsenceButton.removeAttr("disabled");
                 } else {
