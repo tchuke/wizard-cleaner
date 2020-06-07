@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.156
+// @version      0.157
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -280,13 +280,13 @@
                     let millisAway = now.getTime() - storedClockout;
                     let secsAway = millisAway / MILLIS_IN_SEC;
 
-                    const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE;
-                    let secsFudgeUser = user.includes("blah") ? 6 * SECS_IN_MINUTE : 0;
+                    const SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS = SECS_IN_MINUTE / 2;
+                    let secsFudgeUser = user.includes("ile") ? 6 * SECS_IN_MINUTE : 0;
 
                     let secsAwayAdj = secsAway - SECS_FUDGE_FOR_TENTHS_PRECISION_LOSS - secsFudgeUser;
                     let minsAwayAdj = secsAwayAdj / SECS_IN_MINUTE;
 
-                    const MIN_BREAK_TIME_MINUTES = 46;
+                    const MIN_BREAK_TIME_MINUTES = 40;
                     let minsOfBreakLeft = MIN_BREAK_TIME_MINUTES - minsAwayAdj;
                     let breakIsTooShort = minsOfBreakLeft > 0;
                     if (breakIsTooShort) {
