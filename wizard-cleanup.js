@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.159
+// @version      0.160
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -280,7 +280,7 @@
                     let millisAway = now.getTime() - storedClockout;
                     let secsAway = millisAway / MILLIS_IN_SEC;
 
-                    let secsFudgeUser = user.includes("ile") ? 6 * SECS_IN_MINUTE : 0;
+                    let secsFudgeUser = 0;
 
                     /*
                         1:03:30          -> "1:06"  <- 1:09:30
@@ -315,8 +315,7 @@
     (function guardForEarlyClockIn() {
         function isTooEarlyInMorning(now) {
             let hours = now.getHours();
-            let mins = now.getMinutes();
-            return (hours < 9 || (hours === 8 && mins < 40));
+            return (hours < 9);
         }
 
         jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
