@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.160
+// @version      0.161
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -69,6 +69,43 @@
         addTimeOffButton.click(() => setTimeout(handleNoteEdits, waitForRenderMillis));
 
     }()); // End of cleanTimeOffRequest() and invoke
+
+    (function cleanAddTimeRecord() {
+
+        function handleNoteEditing() {
+
+            const timeRecordNote = jQuery("textarea#txtNoteClocked");
+            timeRecordNote.prop("placeholder", "Explain to Doctor why you need to manually add a time record ...");
+
+            const addTimeRequestButton = jQuery("button#btntimesheetpopupSave");
+            addTimeRequestButton.prop('disabled', true);
+
+            function noteHasEnoughContent() {
+                return timeRecordNote.val().trim().length > 8;
+            }
+
+            function noteHasNoGenericWords() {
+                let note = timeRecordNote.val().toLowerCase();
+                let hasGenericWords = note.includes("personal");
+                return !hasGenericWords;
+            }
+
+            timeRecordNote.on("change mouseleave", () => {
+                if (noteHasEnoughContent() && noteHasNoGenericWords()) {
+                    //log("On CHANGE, form is error-free.");
+                    addTimeRequestButton.removeAttr("disabled");
+                } else {
+                    //log("On CHANGE, form has error.");
+                    addTimeRequestButton.prop('disabled', true);
+                }
+            });
+        } // End of handleNoteEditing()
+
+        const addTimeRecordButton = jQuery("a#add_task_link_two");
+        const waitForRenderMillis = 1000;
+        addTimeRecordButton.click(() => setTimeout(handleNoteEditing, waitForRenderMillis));
+
+    }()); // End of cleanAddTimeRecord() and invoke
 
     (function clearClockActionTimesPeriodically() {
         let now = new Date();
