@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.161
+// @version      0.162
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -11,7 +11,7 @@
 // @grant        GM_deleteValue
 // @grant        GM_listValues
 // @grant        GM_openInTab
-// @require      https://code.jquery.com/jquery-3.3.1.js
+// @require      https://code.jquery.com/jquery-3.5.1.js
 // @updateURL    https://www.hidalgocare.com/uploads/7/9/7/8/79788936/wizard-cleanup.js
 // @downloadURL  https://www.hidalgocare.com/uploads/7/9/7/8/79788936/wizard-cleanup.js
 // ==/UserScript==
@@ -351,8 +351,8 @@
 
     (function guardForEarlyClockIn() {
         function isTooEarlyInMorning(now) {
-            let hours = now.getHours();
-            return (hours < 9);
+            const theHour = now.getHours();
+            return theHour < 8 || (theHour === 8 && now.getMinutes() < 58);
         }
 
         jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
