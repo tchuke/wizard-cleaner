@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.163
+// @version      0.164
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -23,6 +23,24 @@
     /* eslint-disable */
     function log(...msg) { console.log(...msg); }
     /* eslint-enable */
+
+    function thAddStyle(cssStr) {
+        let doc = document;
+        let newNode = doc.createElement('style');
+        newNode.textContent = cssStr;
+        let targ = document.getElementsByTagName('head')[0] || doc.body || doc.documentElement;
+        targ.appendChild(newNode);
+    }
+
+    // We need to hide logged-in clock buttons as we are not guarding them right now.
+    thAddStyle(`
+    div#dasboard-btn a#clock_in_link {
+        display:none !important;
+    }
+    div#dasboard-btn a#clock_out_link {
+        display:none !important;
+    }
+`);
 
     (function cleanTimeOffRequest() {
 
@@ -124,12 +142,6 @@
             log("looking to purge, but it is not the right time.");
         }
     }()); // End of clearClockActionTimesPeriodically() and invoke
-
-    // We need to hide logged-in clock buttons as we are not guarding them right now.
-    (function hideDashboardClockButtons() {
-        let dashClockButtons = jQuery("div#dasboard-btn").find("a#clock_out_link, a#clock_in_link");
-        dashClockButtons.hide();
-    }());
 
     function getUserNameInput() { return jQuery("input#UserName"); }
     function getPasswordField() { return jQuery("input#Password"); }
