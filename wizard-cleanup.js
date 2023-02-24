@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.165
+// @version      0.166
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -364,7 +364,7 @@
     (function guardForEarlyClockIn() {
         function isTooEarlyInMorning(now) {
             const theHour = now.getHours();
-            return theHour < 8 || (theHour === 8 && now.getMinutes() < 28);
+            return theHour < 8 || (theHour === 8 && now.getMinutes() < 58);
         }
 
         jQuery("button[value=ClockIn]").click(function handleClockInClick(event) {
