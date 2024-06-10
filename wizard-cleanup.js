@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.169
+// @version      0.170
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -340,7 +340,7 @@
                     let secsAwayAdj = secsAway - secsFudgeUser;
                     let minsAwayAdj = secsAwayAdj / SECS_IN_MINUTE;
 
-                    const MIN_BREAK_TIME_MINUTES = 48;
+                    const MIN_BREAK_TIME_MINUTES = 54;
                     let minsOfBreakLeft = MIN_BREAK_TIME_MINUTES - minsAwayAdj;
                     let breakIsTooShort = minsOfBreakLeft > 0;
                     if (breakIsTooShort) {
