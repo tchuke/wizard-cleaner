@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Time Clock Wizard Cleanup
 // @namespace    http://tampermonkey.net/
-// @version      0.170
+// @version      0.171
 // @description  Cleaning up the Wizard
 // @author       Antonio Hidalgo
 // @match        *://*.timeclockwizard.com/*
@@ -232,7 +232,8 @@
         "second": "2-digit"
     });
 
-    (function warnClockingOutUserOfDefaultBreakInProgress() {
+    /* eslint-disable */
+    function warnClockingOutUserOfDefaultBreakInProgress() {
         let clockoutButton = jQuery("button#btnLocationClockout");
         if (clockoutButton.length) {
             let username = getUserNameInput().val();
@@ -264,7 +265,8 @@
                 clockoutButton.text("Clock Out for Today, " + username);
             }
         }
-    }());
+    }
+    /* eslint-enable */
 
     // HELPER FUNCTIONS invoked in multiple places:
     function getLoginForm() { return jQuery("form[action='/Login']"); }
